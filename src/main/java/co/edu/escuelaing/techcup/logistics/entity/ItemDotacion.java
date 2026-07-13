@@ -67,6 +67,12 @@ public class ItemDotacion {
     @Column(name = "fecha_entrega")
     private Instant fechaEntrega;
 
+    @Column(name = "recibido_por_id")
+    private UUID recibidoPorId;
+
+    @Column(name = "fecha_devolucion")
+    private Instant fechaDevolucion;
+
     @Column(name = "observaciones", length = 500)
     private String observaciones;
 }

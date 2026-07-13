@@ -111,4 +111,22 @@ class DefinicionRefrigerioServiceImplTest {
 
         verify(repository, never()).save(any());
     }
+
+    @Test
+    void listarPorPartido_retornaDefinicionesMapeadas() {
+        DefinicionRefrigerio definicion = DefinicionRefrigerio.builder()
+                .id(UUID.randomUUID())
+                .partidoId(partidoId)
+                .equipoId(equipoId)
+                .items(List.of())
+                .creadoPorId(creadoPorId)
+                .fechaCreacion(java.time.Instant.now())
+                .build();
+        when(repository.findByPartidoId(partidoId)).thenReturn(List.of(definicion));
+
+        List<DefinicionRefrigerioResponse> result = service.listarPorPartido(partidoId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).partidoId()).isEqualTo(partidoId);
+    }
 }

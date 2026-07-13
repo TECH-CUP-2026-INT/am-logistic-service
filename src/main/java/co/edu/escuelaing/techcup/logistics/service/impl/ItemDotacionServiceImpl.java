@@ -12,6 +12,7 @@ import co.edu.escuelaing.techcup.logistics.adapter.auditoria.dto.RegistroAuditor
 import co.edu.escuelaing.techcup.logistics.adapter.auditoria.dto.TipoEntregaAuditoria;
 import co.edu.escuelaing.techcup.logistics.adapter.equipos.EquipoClientPort;
 import co.edu.escuelaing.techcup.logistics.dto.request.MarcarDotacionEntregadaRequest;
+import co.edu.escuelaing.techcup.logistics.dto.request.RegistrarDevolucionDotacionRequest;
 import co.edu.escuelaing.techcup.logistics.dto.request.RegistrarItemDotacionRequest;
 import co.edu.escuelaing.techcup.logistics.dto.response.ItemDotacionResponse;
 import co.edu.escuelaing.techcup.logistics.entity.ItemDotacion;
@@ -79,6 +80,40 @@ public class ItemDotacionServiceImpl implements ItemDotacionService {
                 actualizado.getEquipoId(),
                 actualizado.getEntregadoPorId(),
                 actualizado.getFechaEntrega()
+        ));
+
+        return ItemDotacionMapper.toResponse(actualizado);
+    }
+
+    @Override
+    @Transactional
+    public ItemDotacionResponse registrarDevolucion(
+            UUID itemId, RegistrarDevolucionDotacionRequest request, UUID recibidoPorId) {
+        ItemDotacion item = repository.findById(itemId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("El item de dotacion " + itemId + " no existe"));
+
+        if (item.getEstado() != EstadoDotacion.ENTREGADO) {
+            throw new DuplicateResourceException(
+                    "El item de dotacion " + itemId + " no se puede devolver porque su estado actual es "
+                            + item.getEstado());
+        }
+
+        item.setEstado(EstadoDotacion.DEVUELTO);
+        item.setRecibidoPorId(recibidoPorId);
+        item.setFechaDevolucion(Instant.now());
+        if (request.observaciones() != null) {
+            item.setObservaciones(request.observaciones());
+        }
+
+        ItemDotacion actualizado = repository.save(item);
+
+        auditoriaClientPort.reportarEntrega(new RegistroAuditoriaDTO(
+                TipoEntregaAuditoria.DOTACION,
+                actualizado.getId(),
+                "EQUIPO",
+                actualizado.getEquipoId(),
+                actualizado.getRecibidoPorId(),
+                actualizado.getFechaDevolucion()
         ));
 
         return ItemDotacionMapper.toResponse(actualizado);

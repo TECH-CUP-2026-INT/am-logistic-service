@@ -16,6 +16,8 @@ public record ItemDotacionResponse(
         UUID entregadoPorId,
         Instant fechaRegistro,
         Instant fechaEntrega,
+        UUID recibidoPorId,
+        Instant fechaDevolucion,
         String observaciones
 ) {
 }

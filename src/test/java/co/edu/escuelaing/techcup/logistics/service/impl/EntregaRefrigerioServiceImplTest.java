@@ -137,4 +137,37 @@ class EntregaRefrigerioServiceImplTest {
         verify(repository, never()).save(any());
         verify(auditoriaClientPort, never()).reportarEntrega(any());
     }
+
+    @Test
+    void registrar_equipoDestinatarioDistintoAlDeLaDefinicion_lanzaRecursoNoEncontrado() {
+        UUID otroEquipoId = UUID.randomUUID();
+        RegistrarEntregaRefrigerioRequest request = new RegistrarEntregaRefrigerioRequest(
+                definicionId, TipoDestinatario.EQUIPO, otroEquipoId, null);
+
+        when(definicionRepository.findById(definicionId)).thenReturn(Optional.of(definicion));
+
+        assertThatThrownBy(() -> service.registrar(request, responsableId))
+                .isInstanceOf(RecursoNoEncontradoException.class);
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void listarPorPartido_retornaEntregasMapeadas() {
+        EntregaRefrigerio entrega = EntregaRefrigerio.builder()
+                .id(UUID.randomUUID())
+                .definicionRefrigerioId(definicionId)
+                .partidoId(partidoId)
+                .tipoDestinatario(TipoDestinatario.EQUIPO)
+                .destinatarioId(equipoId)
+                .responsableId(responsableId)
+                .fechaEntrega(Instant.now())
+                .build();
+        when(repository.findByPartidoId(partidoId)).thenReturn(java.util.List.of(entrega));
+
+        var result = service.listarPorPartido(partidoId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).partidoId()).isEqualTo(partidoId);
+    }
 }

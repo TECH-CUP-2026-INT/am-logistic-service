@@ -23,6 +23,7 @@ import co.edu.escuelaing.techcup.logistics.adapter.auditoria.AuditoriaClientPort
 import co.edu.escuelaing.techcup.logistics.adapter.auditoria.dto.RegistroAuditoriaDTO;
 import co.edu.escuelaing.techcup.logistics.adapter.equipos.EquipoClientPort;
 import co.edu.escuelaing.techcup.logistics.dto.request.MarcarDotacionEntregadaRequest;
+import co.edu.escuelaing.techcup.logistics.dto.request.RegistrarDevolucionDotacionRequest;
 import co.edu.escuelaing.techcup.logistics.dto.request.RegistrarItemDotacionRequest;
 import co.edu.escuelaing.techcup.logistics.dto.response.ItemDotacionResponse;
 import co.edu.escuelaing.techcup.logistics.entity.ItemDotacion;
@@ -145,5 +146,116 @@ class ItemDotacionServiceImplTest {
         assertThatThrownBy(() -> service.marcarEntregado(
                 itemId, new MarcarDotacionEntregadaRequest(null), responsableId))
                 .isInstanceOf(RecursoNoEncontradoException.class);
+    }
+
+    @Test
+    void registrarDevolucion_itemEntregado_loMarcaDevueltoYReportaAuditoria() {
+        UUID itemId = UUID.randomUUID();
+        UUID organizadorId = UUID.randomUUID();
+        ItemDotacion entregado = ItemDotacion.builder()
+                .id(itemId)
+                .equipoId(equipoId)
+                .tipoItem(TipoItemDotacion.KIT)
+                .cantidad(1)
+                .estado(EstadoDotacion.ENTREGADO)
+                .responsableAsignadoId(responsableId)
+                .entregadoPorId(responsableId)
+                .fechaRegistro(Instant.now())
+                .fechaEntrega(Instant.now())
+                .build();
+
+        when(repository.findById(itemId)).thenReturn(Optional.of(entregado));
+        when(repository.save(any(ItemDotacion.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ItemDotacionResponse response = service.registrarDevolucion(
+                itemId, new RegistrarDevolucionDotacionRequest("Devuelto completo"), organizadorId);
+
+        assertThat(response.estado()).isEqualTo(EstadoDotacion.DEVUELTO);
+        assertThat(response.recibidoPorId()).isEqualTo(organizadorId);
+        assertThat(response.fechaDevolucion()).isNotNull();
+        verify(auditoriaClientPort, times(1)).reportarEntrega(any(RegistroAuditoriaDTO.class));
+    }
+
+    @Test
+    void registrarDevolucion_itemPendiente_lanzaDuplicateResource() {
+        UUID itemId = UUID.randomUUID();
+        ItemDotacion pendiente = ItemDotacion.builder()
+                .id(itemId)
+                .equipoId(equipoId)
+                .tipoItem(TipoItemDotacion.KIT)
+                .cantidad(1)
+                .estado(EstadoDotacion.PENDIENTE)
+                .responsableAsignadoId(responsableId)
+                .fechaRegistro(Instant.now())
+                .build();
+
+        when(repository.findById(itemId)).thenReturn(Optional.of(pendiente));
+
+        assertThatThrownBy(() -> service.registrarDevolucion(
+                itemId, new RegistrarDevolucionDotacionRequest(null), responsableId))
+                .isInstanceOf(DuplicateResourceException.class);
+
+        verify(repository, never()).save(any());
+        verify(auditoriaClientPort, never()).reportarEntrega(any());
+    }
+
+    @Test
+    void registrarDevolucion_itemYaDevuelto_lanzaDuplicateResource() {
+        UUID itemId = UUID.randomUUID();
+        ItemDotacion devuelto = ItemDotacion.builder()
+                .id(itemId)
+                .equipoId(equipoId)
+                .tipoItem(TipoItemDotacion.KIT)
+                .cantidad(1)
+                .estado(EstadoDotacion.DEVUELTO)
+                .responsableAsignadoId(responsableId)
+                .fechaRegistro(Instant.now())
+                .build();
+
+        when(repository.findById(itemId)).thenReturn(Optional.of(devuelto));
+
+        assertThatThrownBy(() -> service.registrarDevolucion(
+                itemId, new RegistrarDevolucionDotacionRequest(null), responsableId))
+                .isInstanceOf(DuplicateResourceException.class);
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void registrarDevolucion_itemInexistente_lanzaRecursoNoEncontrado() {
+        UUID itemId = UUID.randomUUID();
+        when(repository.findById(itemId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.registrarDevolucion(
+                itemId, new RegistrarDevolucionDotacionRequest(null), responsableId))
+                .isInstanceOf(RecursoNoEncontradoException.class);
+    }
+
+    @Test
+    void listarPorEquipo_sinFiltroDeEstado_usaFindByEquipoId() {
+        ItemDotacion item = ItemDotacion.builder()
+                .id(UUID.randomUUID())
+                .equipoId(equipoId)
+                .tipoItem(TipoItemDotacion.PETO)
+                .cantidad(1)
+                .estado(EstadoDotacion.PENDIENTE)
+                .responsableAsignadoId(responsableId)
+                .fechaRegistro(Instant.now())
+                .build();
+        when(repository.findByEquipoId(equipoId)).thenReturn(java.util.List.of(item));
+
+        var result = service.listarPorEquipo(equipoId, null);
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void listarPorEquipo_conFiltroDeEstado_usaFindByEquipoIdAndEstado() {
+        when(repository.findByEquipoIdAndEstado(equipoId, EstadoDotacion.ENTREGADO))
+                .thenReturn(java.util.List.of());
+
+        var result = service.listarPorEquipo(equipoId, EstadoDotacion.ENTREGADO);
+
+        assertThat(result).isEmpty();
     }
 }

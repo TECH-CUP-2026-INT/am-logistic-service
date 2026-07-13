@@ -1,5 +1,8 @@
 # Servicio de Logística — TechCup Fútbol
 
+[![CI](https://github.com/TECH-CUP-2026-INT/am-logistic-service/actions/workflows/ci-push.yml/badge.svg)](https://github.com/TECH-CUP-2026-INT/am-logistic-service/actions/workflows/ci-push.yml)
+[![Docs](https://img.shields.io/badge/docs-mkdocs-6a1b9a)](https://tech-cup-2026-int.github.io/am-logistic-service/)
+
 > **Estado: completo y verificado.** Las 3 funcionalidades, seguridad, manejo
 > de errores, pruebas y despliegue con Docker están implementados y probados
 > end-to-end (incluyendo casos de error). Lo único pendiente es **externo** a
@@ -42,7 +45,7 @@ entity/        -> Entidades JPA
 enums/         -> Enumeraciones del dominio
 mapper/        -> Conversión entity <-> DTO
 adapter/       -> Puertos + adaptadores hacia otros microservicios (ver abajo)
-security/      -> Verificación del rol organizador (headers del Gateway)
+security/      -> JWT del Gateway (JwtClaimsFilter), API key interna y rol organizador
 exception/     -> Excepciones de negocio + manejo global de errores
 config/        -> Configuración de Spring (interceptores, @Async)
 ```
@@ -62,17 +65,24 @@ tipo en entidades/DTOs/adaptadores.
 
 ## Seguridad
 
-El JWT ya es validado por el API Gateway. Este servicio **no** valida firmas;
-solo espera que el Gateway reenvíe la identidad del usuario en headers:
+El JWT ya es validado por el API Gateway; este servicio **no vuelve a
+verificar la firma** (mismo modelo de confianza que `am-matches-service` y
+`am-notification-service`). `JwtClaimsFilter` decodifica los claims del
+`Authorization: Bearer <jwt>` (`sub` = id de usuario, claim de roles
+configurable vía `techcup.security.role-claim`, por defecto `roles`) y puebla
+el `SecurityContext` con un `AuthenticatedUser` y las autoridades
+`ROLE_<ROL>`. `SecurityConfig` exige autenticación en todos los endpoints
+salvo `/actuator/health` y Swagger.
 
-| Header | Uso |
-|---|---|
-| `X-User-Id` | UUID del usuario autenticado (se usa como responsable/creador) |
-| `X-User-Role` | Rol del usuario; los endpoints de escritura exigen `organizador` |
-
-Los métodos de controller anotados con `@RequireOrganizador` son interceptados
-por `OrganizadorInterceptor`, que responde `403` si el rol no coincide. Los
-endpoints de solo lectura (`GET`) no exigen rol específico.
+Los métodos de controller anotados con `@RequireOrganizador` son
+interceptados por `OrganizadorInterceptor`, que responde `403` si el usuario
+autenticado no tiene la autoridad `ROLE_ORGANIZADOR` — ya no confía en un
+header sin validar. La identidad del usuario para crear/registrar recursos se
+obtiene con `CurrentUserProvider.getCurrentUserId()`, a partir del principal
+autenticado (no de un header). Las llamadas servicio-a-servicio se autentican
+con el header `X-Internal-Api-Key` (`InternalApiKeyFilter`), con el mismo
+valor compartido (`techcup.security.internal.api-key` / env
+`INTERNAL_API_KEY`) que matches-service y notification-service.
 
 ## Integraciones con otros microservicios
 
@@ -171,8 +181,11 @@ entrega.
 | `PATCH` | `/api/dotacion/{itemId}/entrega` | organizador | Marca un ítem de dotación como `ENTREGADO` |
 | `GET` | `/api/dotacion?equipoId=&estado=` | — | Lista ítems de dotación de un equipo |
 
-Para probar los endpoints protegidos desde Swagger UI, en "Try it out" completa
-el header `X-User-Id` (cualquier UUID) y `X-User-Role: organizador`.
+Para probar los endpoints protegidos desde Swagger UI, usa el botón
+**Authorize** con cualquier JWT bien formado que incluya los claims `sub`
+(UUID) y `roles` (debe incluir `organizador` para los endpoints de
+escritura) — no hace falta que la firma sea válida, porque este servicio no
+la verifica (esa es responsabilidad del Gateway en producción).
 
 ## Pendientes antes de conectar en serio
 

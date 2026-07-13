@@ -10,22 +10,19 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import co.edu.escuelaing.techcup.logistics.dto.request.MarcarDotacionEntregadaRequest;
+import co.edu.escuelaing.techcup.logistics.dto.request.RegistrarDevolucionDotacionRequest;
 import co.edu.escuelaing.techcup.logistics.dto.request.RegistrarItemDotacionRequest;
 import co.edu.escuelaing.techcup.logistics.dto.response.ItemDotacionResponse;
 import co.edu.escuelaing.techcup.logistics.enums.EstadoDotacion;
-import co.edu.escuelaing.techcup.logistics.security.CurrentUser;
-import co.edu.escuelaing.techcup.logistics.security.RequestHeaders;
+import co.edu.escuelaing.techcup.logistics.security.CurrentUserProvider;
 import co.edu.escuelaing.techcup.logistics.security.RequireOrganizador;
 import co.edu.escuelaing.techcup.logistics.service.ItemDotacionService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -38,15 +35,15 @@ import lombok.RequiredArgsConstructor;
 public class ItemDotacionController {
 
     private final ItemDotacionService service;
+    private final CurrentUserProvider currentUserProvider;
 
     @PostMapping
     @RequireOrganizador
     @Operation(
             summary = "Registra un item de dotacion como PENDIENTE",
-            description = "Requiere rol organizador. El header X-User-Role no viaja como parametro "
-                    + "del metodo: lo valida el interceptor de seguridad antes de llegar aqui.",
-            parameters = @Parameter(name = RequestHeaders.X_USER_ROLE, in = ParameterIn.HEADER,
-                    required = true, example = RequestHeaders.ROLE_ORGANIZADOR)
+            description = "Requiere rol organizador. La identidad y el rol se extraen del JWT "
+                    + "(header Authorization: Bearer) ya validado por el API Gateway; el "
+                    + "interceptor de seguridad rechaza la solicitud si el rol no es organizador."
     )
     public ResponseEntity<ItemDotacionResponse> registrar(
             @Valid @RequestBody RegistrarItemDotacionRequest request) {
@@ -58,18 +55,35 @@ public class ItemDotacionController {
     @RequireOrganizador
     @Operation(
             summary = "Marca un item de dotacion como ENTREGADO",
-            description = "Requiere rol organizador. El header X-User-Role no viaja como parametro "
-                    + "del metodo: lo valida el interceptor de seguridad antes de llegar aqui.",
-            parameters = @Parameter(name = RequestHeaders.X_USER_ROLE, in = ParameterIn.HEADER,
-                    required = true, example = RequestHeaders.ROLE_ORGANIZADOR)
+            description = "Requiere rol organizador. La identidad y el rol se extraen del JWT "
+                    + "(header Authorization: Bearer) ya validado por el API Gateway; el "
+                    + "interceptor de seguridad rechaza la solicitud si el rol no es organizador."
     )
     public ResponseEntity<ItemDotacionResponse> marcarEntregado(
             @PathVariable UUID itemId,
-            @Valid @RequestBody(required = false) MarcarDotacionEntregadaRequest request,
-            @RequestHeader(RequestHeaders.X_USER_ID) String userId) {
-        UUID entregadoPorId = CurrentUser.idFrom(userId);
+            @Valid @RequestBody(required = false) MarcarDotacionEntregadaRequest request) {
+        UUID entregadoPorId = currentUserProvider.getCurrentUserId();
         MarcarDotacionEntregadaRequest body = request != null ? request : new MarcarDotacionEntregadaRequest(null);
         return ResponseEntity.ok(service.marcarEntregado(itemId, body, entregadoPorId));
+    }
+
+    @PatchMapping("/{itemId}/devolucion")
+    @RequireOrganizador
+    @Operation(
+            summary = "Registra la devolucion de un item de dotacion (estado DEVUELTO)",
+            description = "Requiere rol organizador. El Arbitro devuelve fisicamente los items y el "
+                    + "Organizador autenticado registra la devolucion. Solo aplica si el item esta "
+                    + "actualmente en estado ENTREGADO. La identidad y el rol se extraen del JWT "
+                    + "(header Authorization: Bearer) ya validado por el API Gateway; el "
+                    + "interceptor de seguridad rechaza la solicitud si el rol no es organizador."
+    )
+    public ResponseEntity<ItemDotacionResponse> registrarDevolucion(
+            @PathVariable UUID itemId,
+            @Valid @RequestBody(required = false) RegistrarDevolucionDotacionRequest request) {
+        UUID recibidoPorId = currentUserProvider.getCurrentUserId();
+        RegistrarDevolucionDotacionRequest body = request != null ? request
+                : new RegistrarDevolucionDotacionRequest(null);
+        return ResponseEntity.ok(service.registrarDevolucion(itemId, body, recibidoPorId));
     }
 
     @GetMapping

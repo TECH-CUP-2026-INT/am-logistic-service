@@ -19,6 +19,8 @@ public final class ItemDotacionMapper {
                 entity.getEntregadoPorId(),
                 entity.getFechaRegistro(),
                 entity.getFechaEntrega(),
+                entity.getRecibidoPorId(),
+                entity.getFechaDevolucion(),
                 entity.getObservaciones()
         );
     }
