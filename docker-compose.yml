@@ -1,0 +1,36 @@
+services:
+  mongo:
+    image: mongo:7
+    ports:
+      # 27018 en el host para no chocar con el Postgres de am-matches-service
+      # (5432) ni con otro Mongo local; el contenedor de la app usa el
+      # puerto interno 27017 via la red de docker.
+      - "27018:27017"
+    volumes:
+      - logistics_mongodata:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --eval \"db.adminCommand('ping')\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  service-logistics:
+    build: .
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/service_logistics
+      SERVER_PORT: 8085
+      INTERNAL_API_KEY: local-dev-internal-key
+      # TODO: apuntar a las URLs reales de Torneos, Equipos y Auditoria cuando existan
+      TORNEOS_SERVICE_URL: http://host.docker.internal:8081
+      EQUIPOS_SERVICE_URL: http://host.docker.internal:8082
+      AUDITORIA_SERVICE_URL: http://host.docker.internal:8083
+    ports:
+      # 8085 para no chocar con matches (8080) ni notifications (8083) al
+      # levantar los 3 servicios de astromerge en simultaneo.
+      - "8085:8085"
+
+volumes:
+  logistics_mongodata:

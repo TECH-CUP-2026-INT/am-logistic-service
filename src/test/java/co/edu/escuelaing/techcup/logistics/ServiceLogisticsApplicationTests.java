@@ -1,10 +1,10 @@
 package co.edu.escuelaing.techcup.logistics;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class ServiceLogisticsApplicationTests {
+import co.edu.escuelaing.techcup.logistics.support.AbstractMongoIntegrationTest;
+
+class ServiceLogisticsApplicationTests extends AbstractMongoIntegrationTest {
 
 	@Test
 	void contextLoads() {
