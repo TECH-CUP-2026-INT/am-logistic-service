@@ -1,19 +1,15 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: service_logistics
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+  mongo:
+    image: mongo:7
     ports:
-      # 5434 en el host para no chocar con el Postgres de am-matches-service
-      # (5432) ni con otro Postgres local; el contenedor de la app usa el
-      # puerto interno 5432 via la red de docker.
-      - "5434:5432"
+      # 27018 en el host para no chocar con el Postgres de am-matches-service
+      # (5432) ni con otro Mongo local; el contenedor de la app usa el
+      # puerto interno 27017 via la red de docker.
+      - "27018:27017"
     volumes:
-      - logistics_pgdata:/var/lib/postgresql/data
+      - logistics_mongodata:/data/db
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "mongosh --eval \"db.adminCommand('ping')\""]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -21,12 +17,10 @@ services:
   service-logistics:
     build: .
     depends_on:
-      postgres:
+      mongo:
         condition: service_healthy
     environment:
-      DB_URL: jdbc:postgresql://postgres:5432/service_logistics
-      DB_USERNAME: postgres
-      DB_PASSWORD: postgres
+      MONGODB_URI: mongodb://mongo:27017/service_logistics
       SERVER_PORT: 8085
       INTERNAL_API_KEY: local-dev-internal-key
       # TODO: apuntar a las URLs reales de Torneos, Equipos y Auditoria cuando existan
@@ -39,4 +33,4 @@ services:
       - "8085:8085"
 
 volumes:
-  logistics_pgdata:
+  logistics_mongodata:

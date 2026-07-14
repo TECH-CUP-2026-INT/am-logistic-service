@@ -11,8 +11,7 @@ cd am-logistic-service
 
 ### Opción 1: Docker Compose (recomendado)
 
-Levanta Postgres y el servicio con un solo comando; las migraciones de Flyway
-se aplican automáticamente al arrancar:
+Levanta MongoDB y el servicio con un solo comando:
 
 ```bash
 docker compose up --build
@@ -21,17 +20,16 @@ docker compose up --build
 El servicio queda disponible en `http://localhost:8085` (puerto elegido en
 `docker-compose.yml` para no chocar con `am-matches-service`, que usa `8080`,
 ni con `am-notification-service`, que usa `8083`, al levantar los tres a la
-vez). El Postgres de este servicio se expone en el host en `5434` (interno
-`5432`), también para evitar chocar con el de matches-service.
+vez). El MongoDB de este servicio se expone en el host en `27018` (interno
+`27017`), también para evitar chocar con el de matches-service.
 
 ### Opción 2: Maven local
 
-Requiere Java 21, Maven (o el wrapper incluido) y un PostgreSQL accesible.
+Requiere Java 21, Maven (o el wrapper incluido) y un MongoDB accesible (local
+o Azure Cosmos DB for MongoDB vCore).
 
 ```bash
-DB_URL=jdbc:postgresql://localhost:5432/service_logistics
-DB_USERNAME=postgres
-DB_PASSWORD=postgres
+MONGODB_URI=mongodb://localhost:27017/service_logistics
 
 ./mvnw spring-boot:run
 ```
@@ -44,7 +42,7 @@ fuera de Docker).
 ```bash
 docker build -t am-logistic-service:latest .
 docker run --rm -p 8080:8080 \
-  -e DB_URL=jdbc:postgresql://host.docker.internal:5432/service_logistics \
+  -e MONGODB_URI=mongodb://host.docker.internal:27017/service_logistics \
   am-logistic-service:latest
 ```
 
@@ -52,9 +50,7 @@ docker run --rm -p 8080:8080 \
 
 | Variable | Valor por defecto | Uso |
 |---|---|---|
-| `DB_URL` | `jdbc:postgresql://localhost:5432/service_logistics` | URL JDBC de PostgreSQL |
-| `DB_USERNAME` | `postgres` | Usuario de la base de datos |
-| `DB_PASSWORD` | `postgres` | Contraseña de la base de datos |
+| `MONGODB_URI` | `mongodb://localhost:27017/service_logistics` | Connection string de MongoDB (compatible con Azure Cosmos DB for MongoDB vCore vía `mongodb://` o `mongodb+srv://`) |
 | `SERVER_PORT` | `8080` | Puerto HTTP del servicio |
 | `ROLE_CLAIM` | `roles` | Claim del JWT donde se buscan los roles del usuario |
 | `INTERNAL_API_KEY` | `local-dev-internal-key` | API key compartida para llamadas servicio-a-servicio (debe coincidir con la de matches/notifications) |

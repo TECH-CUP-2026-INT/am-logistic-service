@@ -40,8 +40,8 @@ controller/    -> REST controllers (capa de entrada)
 dto/           -> DTOs de request/response, separados de las entidades
 service/       -> Interfaces de negocio
 service/impl/  -> Implementación de la lógica de negocio y validaciones
-repository/    -> Spring Data JPA
-entity/        -> Entidades JPA
+repository/    -> Spring Data MongoDB
+entity/        -> Documentos MongoDB
 enums/         -> Enumeraciones del dominio
 mapper/        -> Conversión entity <-> DTO
 adapter/       -> Puertos + adaptadores hacia otros microservicios (ver abajo)
@@ -111,8 +111,7 @@ eventos/cola, `AuditoriaClientAdapter` es el único punto a reemplazar.
 
 ### Opción 1: Docker Compose (recomendado)
 
-Levanta Postgres y el servicio con un solo comando; las migraciones de Flyway
-se aplican automáticamente al arrancar:
+Levanta MongoDB y el servicio con un solo comando:
 
 ```bash
 docker compose up --build
@@ -125,13 +124,12 @@ esos servicios existan en la plataforma).
 
 ### Opción 2: Maven local
 
-Requiere Java 21, Maven (o el wrapper incluido) y un PostgreSQL accesible.
+Requiere Java 21, Maven (o el wrapper incluido) y un MongoDB accesible (local
+o Azure Cosmos DB for MongoDB vCore).
 
 ```bash
 # Variables de entorno esperadas (con valores por defecto para desarrollo local)
-DB_URL=jdbc:postgresql://localhost:5432/service_logistics
-DB_USERNAME=postgres
-DB_PASSWORD=postgres
+MONGODB_URI=mongodb://localhost:27017/service_logistics
 TORNEOS_SERVICE_URL=http://localhost:8081
 EQUIPOS_SERVICE_URL=http://localhost:8082
 AUDITORIA_SERVICE_URL=http://localhost:8083
@@ -156,13 +154,14 @@ AUDITORIA_SERVICE_URL=http://localhost:8083
 Incluye pruebas unitarias (Mockito) de la lógica de negocio de los 3
 requerimientos funcionales, cubriendo casos felices y validaciones de
 duplicados/no-encontrado. El test de contexto de Spring (`ServiceLogisticsApplicationTests`)
-usa H2 en memoria (ver `src/test/resources/application.properties`) para no
-depender de un Postgres real.
+levanta un contenedor MongoDB real vía Testcontainers (ver
+`AbstractMongoIntegrationTest`), por lo que requiere Docker disponible en el
+entorno donde se ejecuten los tests.
 
 **Verificación end-to-end:** además de las pruebas unitarias, el servicio se
-levantó completo con `docker compose` (Postgres real + migraciones Flyway) y
+levantó completo con `docker compose` (MongoDB real) y
 se probó con mocks HTTP de Torneos/Equipos/Auditoría, confirmando: arranque
-limpio, aplicación de las 3 migraciones, `/actuator/health`, Swagger UI,
+limpio, creación de los índices compuestos en MongoDB, `/actuator/health`, Swagger UI,
 rechazo `403` sin rol organizador, error `400` de validación, error `502`
 cuando un servicio externo no responde, el flujo feliz completo (crear
 definición → registrar entrega → registrar dotación → marcar entregada), los

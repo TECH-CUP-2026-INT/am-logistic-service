@@ -7,8 +7,8 @@ controller/    -> REST controllers (capa de entrada)
 dto/           -> DTOs de request/response, separados de las entidades
 service/       -> Interfaces de negocio
 service/impl/  -> Implementación de la lógica de negocio y validaciones
-repository/    -> Spring Data JPA
-entity/        -> Entidades JPA
+repository/    -> Spring Data MongoDB
+entity/        -> Documentos MongoDB
 enums/         -> Enumeraciones del dominio
 mapper/        -> Conversión entity <-> DTO
 adapter/       -> Puertos + adaptadores hacia otros microservicios
@@ -105,11 +105,11 @@ Auditoría lo defina.
 Para poder levantar los tres servicios del equipo a la vez en desarrollo
 local sin choques de puerto:
 
-| Servicio | Puerto app (Docker) | Puerto Postgres (host) |
+| Servicio | Puerto app (Docker) | Puerto base de datos (host) |
 |---|---|---|
-| `am-matches-service` | `8080` | `5432` |
-| `am-notification-service` | `8083` | `5433` |
-| `am-logistic-service` | `8085` | `5434` |
+| `am-matches-service` | `8080` | `5432` (Postgres) |
+| `am-notification-service` | `8083` | `5433` (Postgres) |
+| `am-logistic-service` | `8085` | `27018` (MongoDB) |
 
 `am-logistic-service` no llama hoy a `am-matches-service` ni a
 `am-notification-service` directamente — sus tres adaptadores apuntan a
@@ -121,7 +121,7 @@ entre los tres servicios propios.
 
 Se levantó `am-logistic-service` junto con `am-matches-service` y
 `am-notification-service` (`docker compose up --build` en los 3 repos a la
-vez) y se confirmó: arranque limpio sin choque de puertos/Postgres,
+vez) y se confirmó: arranque limpio sin choque de puertos/base de datos,
 `/actuator/health` en `200`, `403` sin JWT en un endpoint de escritura,
 `201`→flujo feliz hasta el punto en que depende de Torneos (que no existe
 en este workspace, falla de forma segura con `502` como está documentado),
