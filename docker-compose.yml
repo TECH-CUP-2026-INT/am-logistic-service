@@ -27,10 +27,43 @@ services:
       TORNEOS_SERVICE_URL: http://host.docker.internal:8081
       EQUIPOS_SERVICE_URL: http://host.docker.internal:8082
       AUDITORIA_SERVICE_URL: http://host.docker.internal:8083
+      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
     ports:
       # 8085 para no chocar con matches (8080) ni notifications (8083) al
       # levantar los 3 servicios de astromerge en simultaneo.
       - "8085:8085"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8085/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      # Puerto de host configurable: si se levantan varios servicios de astromerge
+      # a la vez (matches/notifications/logistics), cada uno usa un puerto distinto
+      # para no chocar, igual que ya se hace con el puerto de Mongo.
+      - "${PROMETHEUS_PORT:-9092}:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./observability/grafana-datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+    ports:
+      - "${GRAFANA_PORT:-3002}:3000"
+    depends_on:
+      - prometheus
+
+  zipkin:
+    image: openzipkin/zipkin:latest
+    ports:
+      - "${ZIPKIN_PORT:-9413}:9411"
 
 volumes:
   logistics_mongodata:
