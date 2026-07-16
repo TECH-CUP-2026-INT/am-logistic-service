@@ -23,6 +23,9 @@ public class SecurityConfig {
     }
 
     @Bean
+    @SuppressWarnings("java:S4502") // CSRF no aplica: API sin estado (STATELESS), autenticada por
+    // JWT Bearer / API key interna en headers explicitos, sin cookies de sesion que un navegador
+    // adjunte automaticamente; revisado y confirmado seguro para esta arquitectura.
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())

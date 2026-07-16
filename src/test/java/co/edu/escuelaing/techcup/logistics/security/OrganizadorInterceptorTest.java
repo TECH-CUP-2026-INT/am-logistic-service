@@ -3,7 +3,6 @@ package co.edu.escuelaing.techcup.logistics.security;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -85,10 +84,14 @@ class OrganizadorInterceptorTest {
 
     static class SampleController {
         public void sinAnotacion() {
+            // Cuerpo vacio a proposito: el metodo solo se usa como referencia
+            // reflexiva en HandlerMethod, nunca se invoca.
         }
 
         @RequireOrganizador
         public void requiereOrganizador() {
+            // Cuerpo vacio a proposito: el metodo solo se usa como referencia
+            // reflexiva en HandlerMethod, nunca se invoca.
         }
     }
 }

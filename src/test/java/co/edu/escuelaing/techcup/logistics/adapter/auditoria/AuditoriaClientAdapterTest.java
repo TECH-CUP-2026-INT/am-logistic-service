@@ -1,6 +1,6 @@
 package co.edu.escuelaing.techcup.logistics.adapter.auditoria;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -64,6 +64,6 @@ class AuditoriaClientAdapterTest {
         when(bodyUriSpec.body(registro)).thenReturn(bodyUriSpec);
         when(bodyUriSpec.retrieve()).thenThrow(new RuntimeException("conexion rechazada"));
 
-        adapter.reportarEntrega(registro);
+        assertThatCode(() -> adapter.reportarEntrega(registro)).doesNotThrowAnyException();
     }
 }

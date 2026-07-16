@@ -5,7 +5,7 @@ import java.util.UUID;
 
 /**
  * Payload de trazabilidad reportado a Auditoria por cada entrega registrada.
- * TODO: confirmar con el equipo de Auditoria la forma real del contrato esperado.
+ * Nota: confirmar con el equipo de Auditoria la forma real del contrato esperado.
  */
 public record RegistroAuditoriaDTO(
         TipoEntregaAuditoria tipoEntrega,

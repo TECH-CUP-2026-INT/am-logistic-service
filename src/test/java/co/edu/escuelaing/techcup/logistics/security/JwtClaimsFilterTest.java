@@ -8,6 +8,8 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -78,22 +80,15 @@ class JwtClaimsFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
-    @Test
-    void doFilter_malformedToken_doesNotAuthenticate() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "Bearer not-a-jwt",
+            "Bearer header.###not-base64###.sig",
+            "Basic dXNlcjpwYXNz"
+    })
+    void doFilter_invalidOrNonBearerAuthorizationHeader_doesNotAuthenticate(String headerValue) throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.addHeader("Authorization", "Bearer not-a-jwt");
-        MockHttpServletResponse response = new MockHttpServletResponse();
-        MockFilterChain chain = new MockFilterChain();
-
-        filter.doFilter(request, response, chain);
-
-        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
-    }
-
-    @Test
-    void doFilter_invalidBase64Payload_doesNotAuthenticateAndContinuesChain() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        request.addHeader("Authorization", "Bearer header.###not-base64###.sig");
+        request.addHeader("Authorization", headerValue);
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
 
@@ -105,18 +100,6 @@ class JwtClaimsFilterTest {
     @Test
     void doFilter_missingAuthorizationHeader_doesNotAuthenticate() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
-        MockHttpServletResponse response = new MockHttpServletResponse();
-        MockFilterChain chain = new MockFilterChain();
-
-        filter.doFilter(request, response, chain);
-
-        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
-    }
-
-    @Test
-    void doFilter_nonBearerAuthorizationHeader_doesNotAuthenticate() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        request.addHeader("Authorization", "Basic dXNlcjpwYXNz");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
 

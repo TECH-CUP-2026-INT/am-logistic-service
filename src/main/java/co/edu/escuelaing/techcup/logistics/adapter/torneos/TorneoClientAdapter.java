@@ -15,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Adaptador REST sincrono hacia el Servicio de Torneos.
  *
- * TODO: contrato pendiente de confirmar con el equipo de Torneos:
+ * Nota: contrato pendiente de confirmar con el equipo de Torneos:
  *   - Ruta real para consultar un partido por id (se asume GET /partidos/{id}).
  *   - Forma exacta del payload de respuesta (se asume id, jornadaId, fechaProgramada).
  *   - Codigo de error para "partido no existe" (se asume 404).

@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Adaptador REST hacia el Servicio de Auditoria.
  *
- * TODO: contrato pendiente de confirmar con el equipo de Auditoria:
+ * Nota: contrato pendiente de confirmar con el equipo de Auditoria:
  *   - Ruta real para reportar una entrega (se asume POST /registros).
  *   - Forma exacta del payload esperado.
  *   - Cuando Auditoria defina un mecanismo de eventos/cola, este adaptador

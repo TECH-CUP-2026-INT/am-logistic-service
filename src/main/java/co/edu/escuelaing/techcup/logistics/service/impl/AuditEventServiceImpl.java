@@ -28,6 +28,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuditEventServiceImpl implements AuditEventService {
 
+    private static final String PARA_EQUIPO = " para equipo ";
+
     private final DefinicionRefrigerioRepository definicionRefrigerioRepository;
     private final EntregaRefrigerioRepository entregaRefrigerioRepository;
     private final ItemDotacionRepository itemDotacionRepository;
@@ -61,7 +63,7 @@ public class AuditEventServiceImpl implements AuditEventService {
                     item.getId(),
                     item.getResponsableAsignadoId(),
                     item.getFechaRegistro(),
-                    "Registro de " + item.getTipoItem() + " para equipo " + item.getEquipoId()));
+                    "Registro de " + item.getTipoItem() + PARA_EQUIPO + item.getEquipoId()));
 
             if (item.getEstado() == EstadoDotacion.ENTREGADO || item.getEstado() == EstadoDotacion.DEVUELTO) {
                 eventos.add(new AuditEventResponse(
@@ -69,7 +71,7 @@ public class AuditEventServiceImpl implements AuditEventService {
                         item.getId(),
                         item.getEntregadoPorId(),
                         item.getFechaEntrega(),
-                        "Entrega de " + item.getTipoItem() + " para equipo " + item.getEquipoId()));
+                        "Entrega de " + item.getTipoItem() + PARA_EQUIPO + item.getEquipoId()));
             }
 
             if (item.getEstado() == EstadoDotacion.DEVUELTO) {
@@ -78,7 +80,7 @@ public class AuditEventServiceImpl implements AuditEventService {
                         item.getId(),
                         item.getRecibidoPorId(),
                         item.getFechaDevolucion(),
-                        "Devolucion de " + item.getTipoItem() + " para equipo " + item.getEquipoId()));
+                        "Devolucion de " + item.getTipoItem() + PARA_EQUIPO + item.getEquipoId()));
             }
         }
 

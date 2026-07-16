@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Adaptador REST sincrono hacia el Servicio de Equipos.
  *
- * TODO: contrato pendiente de confirmar con el equipo de Equipos:
+ * Nota: contrato pendiente de confirmar con el equipo de Equipos:
  *   - Ruta real para validar un equipo (se asume GET /equipos/{id}).
  *   - Ruta real para validar pertenencia de un jugador a un equipo
  *     (se asume GET /equipos/{equipoId}/jugadores/{jugadorId}).

@@ -5,4 +5,6 @@ package co.edu.escuelaing.techcup.logistics.security;
  * Deliberadamente no tiene userId: nunca debe poder pasar por CurrentUserProvider.
  */
 public record InternalServicePrincipal() {
+
+    public static final InternalServicePrincipal INSTANCE = new InternalServicePrincipal();
 }

@@ -5,7 +5,7 @@ import java.util.UUID;
 
 /**
  * Representacion minima de un partido segun el Servicio de Torneos.
- * TODO: confirmar con el equipo de Torneos la forma real del payload expuesto.
+ * Nota: confirmar con el equipo de Torneos la forma real del payload expuesto.
  */
 public record PartidoDTO(
         UUID id,

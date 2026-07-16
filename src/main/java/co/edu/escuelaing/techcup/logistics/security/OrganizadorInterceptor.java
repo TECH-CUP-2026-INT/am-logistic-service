@@ -24,18 +24,19 @@ public class OrganizadorInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        if (!(handler instanceof HandlerMethod handlerMethod)) {
-            return true;
+        if (handler instanceof HandlerMethod handlerMethod
+                && handlerMethod.hasMethodAnnotation(RequireOrganizador.class)) {
+            verificarRolOrganizador();
         }
-        if (!handlerMethod.hasMethodAnnotation(RequireOrganizador.class)) {
-            return true;
-        }
+        return true;
+    }
+
+    private void verificarRolOrganizador() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         boolean isOrganizador = authentication != null && authentication.getAuthorities().stream()
                 .anyMatch(authority -> authority.getAuthority().equals(ROLE_ORGANIZADOR_AUTHORITY));
         if (!isOrganizador) {
             throw new ForbiddenRoleException("Esta operacion requiere el rol organizador");
         }
-        return true;
     }
 }

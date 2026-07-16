@@ -129,9 +129,9 @@ class ItemDotacionServiceImplTest {
                 .build();
 
         when(repository.findById(itemId)).thenReturn(Optional.of(yaEntregado));
+        MarcarDotacionEntregadaRequest request = new MarcarDotacionEntregadaRequest(null);
 
-        assertThatThrownBy(() -> service.marcarEntregado(
-                itemId, new MarcarDotacionEntregadaRequest(null), responsableId))
+        assertThatThrownBy(() -> service.marcarEntregado(itemId, request, responsableId))
                 .isInstanceOf(DuplicateResourceException.class);
 
         verify(repository, never()).save(any());
@@ -142,9 +142,9 @@ class ItemDotacionServiceImplTest {
     void marcarEntregado_itemInexistente_lanzaRecursoNoEncontrado() {
         UUID itemId = UUID.randomUUID();
         when(repository.findById(itemId)).thenReturn(Optional.empty());
+        MarcarDotacionEntregadaRequest request = new MarcarDotacionEntregadaRequest(null);
 
-        assertThatThrownBy(() -> service.marcarEntregado(
-                itemId, new MarcarDotacionEntregadaRequest(null), responsableId))
+        assertThatThrownBy(() -> service.marcarEntregado(itemId, request, responsableId))
                 .isInstanceOf(RecursoNoEncontradoException.class);
     }
 
@@ -190,9 +190,9 @@ class ItemDotacionServiceImplTest {
                 .build();
 
         when(repository.findById(itemId)).thenReturn(Optional.of(pendiente));
+        RegistrarDevolucionDotacionRequest request = new RegistrarDevolucionDotacionRequest(null);
 
-        assertThatThrownBy(() -> service.registrarDevolucion(
-                itemId, new RegistrarDevolucionDotacionRequest(null), responsableId))
+        assertThatThrownBy(() -> service.registrarDevolucion(itemId, request, responsableId))
                 .isInstanceOf(DuplicateResourceException.class);
 
         verify(repository, never()).save(any());
@@ -213,9 +213,9 @@ class ItemDotacionServiceImplTest {
                 .build();
 
         when(repository.findById(itemId)).thenReturn(Optional.of(devuelto));
+        RegistrarDevolucionDotacionRequest request = new RegistrarDevolucionDotacionRequest(null);
 
-        assertThatThrownBy(() -> service.registrarDevolucion(
-                itemId, new RegistrarDevolucionDotacionRequest(null), responsableId))
+        assertThatThrownBy(() -> service.registrarDevolucion(itemId, request, responsableId))
                 .isInstanceOf(DuplicateResourceException.class);
 
         verify(repository, never()).save(any());
@@ -225,9 +225,9 @@ class ItemDotacionServiceImplTest {
     void registrarDevolucion_itemInexistente_lanzaRecursoNoEncontrado() {
         UUID itemId = UUID.randomUUID();
         when(repository.findById(itemId)).thenReturn(Optional.empty());
+        RegistrarDevolucionDotacionRequest request = new RegistrarDevolucionDotacionRequest(null);
 
-        assertThatThrownBy(() -> service.registrarDevolucion(
-                itemId, new RegistrarDevolucionDotacionRequest(null), responsableId))
+        assertThatThrownBy(() -> service.registrarDevolucion(itemId, request, responsableId))
                 .isInstanceOf(RecursoNoEncontradoException.class);
     }
 
