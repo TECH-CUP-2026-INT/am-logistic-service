@@ -7,19 +7,20 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.time.Instant;
-import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
-import co.edu.escuelaing.techcup.logistics.adapter.torneos.dto.PartidoDTO;
+import co.edu.escuelaing.techcup.logistics.adapter.torneos.dto.BracketNodoResponse;
+import co.edu.escuelaing.techcup.logistics.adapter.torneos.dto.TorneoResponse;
 import co.edu.escuelaing.techcup.logistics.exception.IntegrationException;
 
 class TorneoClientAdapterTest {
@@ -40,141 +41,113 @@ class TorneoClientAdapterTest {
     }
 
     @SuppressWarnings("unchecked")
-    @Test
-    void obtenerPartido_partidoExiste_retornaOptionalConDatos() {
-        UUID partidoId = UUID.randomUUID();
-        PartidoDTO dto = new PartidoDTO(partidoId, UUID.randomUUID(), Instant.now());
-
+    private void stubByMatch() {
         when(restClient.get()).thenReturn(uriSpec);
-        when(uriSpec.uri(eq("/partidos/{id}"), any(Object[].class))).thenReturn(uriSpec);
+        when(uriSpec.uri(eq("/tournaments/by-match/{matchId}"), any(Object[].class))).thenReturn(uriSpec);
         when(uriSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.body(PartidoDTO.class)).thenReturn(dto);
-
-        Optional<PartidoDTO> result = adapter.obtenerPartido(partidoId);
-
-        assertThat(result).contains(dto);
     }
 
     @SuppressWarnings("unchecked")
-    @Test
-    void obtenerPartido_partidoNoExiste404_retornaOptionalVacio() {
-        UUID partidoId = UUID.randomUUID();
-
+    private void stubByMatchAndBracket() {
         when(restClient.get()).thenReturn(uriSpec);
-        when(uriSpec.uri(eq("/partidos/{id}"), any(Object[].class))).thenReturn(uriSpec);
+        when(uriSpec.uri(eq("/tournaments/by-match/{matchId}"), any(Object[].class))).thenReturn(uriSpec);
+        when(uriSpec.uri(eq("/tournaments/{tournamentId}/bracket"), any(Object[].class))).thenReturn(uriSpec);
         when(uriSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.body(PartidoDTO.class)).thenThrow(
-                HttpClientErrorException.create(HttpStatus.NOT_FOUND, "Not Found",
-                        HttpHeaders.EMPTY, new byte[0], null));
-
-        Optional<PartidoDTO> result = adapter.obtenerPartido(partidoId);
-
-        assertThat(result).isEmpty();
     }
 
-    @SuppressWarnings("unchecked")
-    @Test
-    void obtenerPartido_errorHttpDistintoDe404_lanzaIntegrationException() {
-        UUID partidoId = UUID.randomUUID();
+    private HttpClientErrorException notFound() {
+        return HttpClientErrorException.create(HttpStatus.NOT_FOUND, "Not Found",
+                HttpHeaders.EMPTY, new byte[0], null);
+    }
 
-        when(restClient.get()).thenReturn(uriSpec);
-        when(uriSpec.uri(eq("/partidos/{id}"), any(Object[].class))).thenReturn(uriSpec);
-        when(uriSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.body(PartidoDTO.class)).thenThrow(
+    @Test
+    void existePartido_partidoExiste_retornaTrue() {
+        stubByMatch();
+        when(responseSpec.body(TorneoResponse.class)).thenReturn(new TorneoResponse(UUID.randomUUID()));
+
+        assertThat(adapter.existePartido(UUID.randomUUID())).isTrue();
+    }
+
+    @Test
+    void existePartido_partidoNoExiste404_retornaFalse() {
+        stubByMatch();
+        when(responseSpec.body(TorneoResponse.class)).thenThrow(notFound());
+
+        assertThat(adapter.existePartido(UUID.randomUUID())).isFalse();
+    }
+
+    @Test
+    void existePartido_errorHttpDistintoDe404_lanzaIntegrationException() {
+        stubByMatch();
+        when(responseSpec.body(TorneoResponse.class)).thenThrow(
                 HttpClientErrorException.create(HttpStatus.INTERNAL_SERVER_ERROR, "Server Error",
                         HttpHeaders.EMPTY, new byte[0], null));
 
-        assertThatThrownBy(() -> adapter.obtenerPartido(partidoId))
+        assertThatThrownBy(() -> adapter.existePartido(UUID.randomUUID()))
                 .isInstanceOf(IntegrationException.class);
     }
 
-    @SuppressWarnings("unchecked")
     @Test
-    void obtenerPartido_errorInesperado_lanzaIntegrationException() {
-        UUID partidoId = UUID.randomUUID();
+    void existePartido_errorInesperado_lanzaIntegrationException() {
+        stubByMatch();
+        when(responseSpec.body(TorneoResponse.class)).thenThrow(new RuntimeException("timeout"));
 
-        when(restClient.get()).thenReturn(uriSpec);
-        when(uriSpec.uri(eq("/partidos/{id}"), any(Object[].class))).thenReturn(uriSpec);
-        when(uriSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.body(PartidoDTO.class)).thenThrow(new RuntimeException("timeout"));
-
-        assertThatThrownBy(() -> adapter.obtenerPartido(partidoId))
+        assertThatThrownBy(() -> adapter.existePartido(UUID.randomUUID()))
                 .isInstanceOf(IntegrationException.class);
     }
 
-    @SuppressWarnings("unchecked")
     @Test
-    void existePartido_partidoExiste_retornaTrue() {
-        UUID partidoId = UUID.randomUUID();
-        PartidoDTO dto = new PartidoDTO(partidoId, UUID.randomUUID(), Instant.now());
-
-        when(restClient.get()).thenReturn(uriSpec);
-        when(uriSpec.uri(eq("/partidos/{id}"), any(Object[].class))).thenReturn(uriSpec);
-        when(uriSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.body(PartidoDTO.class)).thenReturn(dto);
-
-        assertThat(adapter.existePartido(partidoId)).isTrue();
-    }
-
-    @SuppressWarnings("unchecked")
-    @Test
-    void existePartido_partidoNoExiste_retornaFalse() {
-        UUID partidoId = UUID.randomUUID();
-
-        when(restClient.get()).thenReturn(uriSpec);
-        when(uriSpec.uri(eq("/partidos/{id}"), any(Object[].class))).thenReturn(uriSpec);
-        when(uriSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.body(PartidoDTO.class)).thenThrow(
-                HttpClientErrorException.create(HttpStatus.NOT_FOUND, "Not Found",
-                        HttpHeaders.EMPTY, new byte[0], null));
-
-        assertThat(adapter.existePartido(partidoId)).isFalse();
-    }
-
-    @SuppressWarnings("unchecked")
-    @Test
-    void equipoClasificadoSegundaFase_clasificado_retornaTrue() {
+    void equipoClasificadoSegundaFase_equipoEnBracket_retornaTrue() {
+        UUID torneoId = UUID.randomUUID();
         UUID equipoId = UUID.randomUUID();
+        stubByMatchAndBracket();
+        when(responseSpec.body(TorneoResponse.class)).thenReturn(new TorneoResponse(torneoId));
+        when(responseSpec.body(any(ParameterizedTypeReference.class))).thenReturn(List.of(
+                new BracketNodoResponse(UUID.randomUUID(), UUID.randomUUID(), null, null),
+                new BracketNodoResponse(equipoId, UUID.randomUUID(), null, null)));
 
-        when(restClient.get()).thenReturn(uriSpec);
-        when(uriSpec.uri(eq("/equipos/{equipoId}/clasificacion/segunda-fase"), any(Object[].class)))
-                .thenReturn(uriSpec);
-        when(uriSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.toBodilessEntity()).thenReturn(org.springframework.http.ResponseEntity.ok().build());
-
-        assertThat(adapter.equipoClasificadoSegundaFase(equipoId)).isTrue();
+        assertThat(adapter.equipoClasificadoSegundaFase(UUID.randomUUID(), equipoId)).isTrue();
     }
 
-    @SuppressWarnings("unchecked")
     @Test
-    void equipoClasificadoSegundaFase_noClasificado404_retornaFalse() {
-        UUID equipoId = UUID.randomUUID();
+    void equipoClasificadoSegundaFase_equipoFueraDelBracket_retornaFalse() {
+        UUID torneoId = UUID.randomUUID();
+        stubByMatchAndBracket();
+        when(responseSpec.body(TorneoResponse.class)).thenReturn(new TorneoResponse(torneoId));
+        when(responseSpec.body(any(ParameterizedTypeReference.class))).thenReturn(List.of(
+                new BracketNodoResponse(UUID.randomUUID(), UUID.randomUUID(), null, null)));
 
-        when(restClient.get()).thenReturn(uriSpec);
-        when(uriSpec.uri(eq("/equipos/{equipoId}/clasificacion/segunda-fase"), any(Object[].class)))
-                .thenReturn(uriSpec);
-        when(uriSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.toBodilessEntity()).thenThrow(
-                HttpClientErrorException.create(HttpStatus.NOT_FOUND, "Not Found",
-                        HttpHeaders.EMPTY, new byte[0], null));
-
-        assertThat(adapter.equipoClasificadoSegundaFase(equipoId)).isFalse();
+        assertThat(adapter.equipoClasificadoSegundaFase(UUID.randomUUID(), UUID.randomUUID())).isFalse();
     }
 
-    @SuppressWarnings("unchecked")
     @Test
-    void equipoClasificadoSegundaFase_errorHttpDistintoDe404_lanzaIntegrationException() {
-        UUID equipoId = UUID.randomUUID();
+    void equipoClasificadoSegundaFase_bracketVacio_retornaFalse() {
+        UUID torneoId = UUID.randomUUID();
+        stubByMatchAndBracket();
+        when(responseSpec.body(TorneoResponse.class)).thenReturn(new TorneoResponse(torneoId));
+        when(responseSpec.body(any(ParameterizedTypeReference.class))).thenReturn(List.of());
 
-        when(restClient.get()).thenReturn(uriSpec);
-        when(uriSpec.uri(eq("/equipos/{equipoId}/clasificacion/segunda-fase"), any(Object[].class)))
-                .thenReturn(uriSpec);
-        when(uriSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.toBodilessEntity()).thenThrow(
+        assertThat(adapter.equipoClasificadoSegundaFase(UUID.randomUUID(), UUID.randomUUID())).isFalse();
+    }
+
+    @Test
+    void equipoClasificadoSegundaFase_partidoNoExiste_retornaFalse() {
+        stubByMatch();
+        when(responseSpec.body(TorneoResponse.class)).thenThrow(notFound());
+
+        assertThat(adapter.equipoClasificadoSegundaFase(UUID.randomUUID(), UUID.randomUUID())).isFalse();
+    }
+
+    @Test
+    void equipoClasificadoSegundaFase_falloAlConsultarBracket_lanzaIntegrationException() {
+        UUID torneoId = UUID.randomUUID();
+        stubByMatchAndBracket();
+        when(responseSpec.body(TorneoResponse.class)).thenReturn(new TorneoResponse(torneoId));
+        when(responseSpec.body(any(ParameterizedTypeReference.class))).thenThrow(
                 HttpClientErrorException.create(HttpStatus.SERVICE_UNAVAILABLE, "Unavailable",
                         HttpHeaders.EMPTY, new byte[0], null));
 
-        assertThatThrownBy(() -> adapter.equipoClasificadoSegundaFase(equipoId))
+        assertThatThrownBy(() -> adapter.equipoClasificadoSegundaFase(UUID.randomUUID(), UUID.randomUUID()))
                 .isInstanceOf(IntegrationException.class);
     }
 }
