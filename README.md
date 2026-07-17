@@ -1,37 +1,87 @@
-# Servicio de Logística — TechCup Fútbol
+# 1. Nombre del servicio
 
-[![CI](https://github.com/TECH-CUP-2026-INT/am-logistic-service/actions/workflows/ci-push.yml/badge.svg)](https://github.com/TECH-CUP-2026-INT/am-logistic-service/actions/workflows/ci-push.yml)
-[![Docs](https://img.shields.io/badge/docs-mkdocs-6a1b9a)](https://tech-cup-2026-int.github.io/am-logistic-service/)
+**Servicio de Logística — TechCup Fútbol** (`am-logistic-service`)
 
-> **Estado: completo y verificado.** Las 3 funcionalidades, seguridad, manejo
-> de errores, pruebas y despliegue con Docker están implementados y probados
-> end-to-end (incluyendo casos de error). Lo único pendiente es **externo** a
-> este repo: que Torneos, Equipos y Auditoría confirmen sus contratos reales
-> y expongan sus servicios — ver [Pendientes](#pendientes-antes-de-conectar-en-serio)
-> al final de este documento.
+# 2. Descripción del servicio
 
 Microservicio Spring Boot responsable de la operación **no deportiva** del torneo
 universitario TechCup Fútbol: refrigerios y dotación (petos, balones, kits) para
-equipos y jugadores. No maneja partidos, alineaciones ni resultados — esa
-información vive en otros microservicios de la plataforma.
+equipos, jugadores y árbitros. No maneja partidos, alineaciones ni resultados —
+esa información vive en otros microservicios de la plataforma (`am-matches-service`).
 
 El actor principal es el **Organizador**, quien define qué se entrega y registra
-las entregas reales.
+las entregas reales. Toda entrega queda registrada con fecha, responsable y
+destinatario, y se reporta al Servicio de Auditoría para su trazabilidad
+posterior.
 
-## Funcionalidades
+Es uno de los tres servicios del dominio **D3 — Operaciones y Comunicación**
+del equipo **astromerge**, junto con `am-matches-service` y
+`am-notification-service`.
+
+# 3. Funcionalidades del servicio
 
 1. **Definición de refrigerios por equipo** — el organizador define qué
    refrigerio(s) corresponden a un equipo en un partido, evitando duplicar la
    definición para el mismo partido/equipo.
-2. **Registro de entrega de refrigerios** — se registra la entrega real por
-   equipo o por jugador, validando que no exista ya una entrega para el mismo
-   destinatario en el mismo partido.
-3. **Registro y control de dotación** (petos, balones, kits) — cada ítem tiene
-   estado `PENDIENTE` o `ENTREGADO` y un responsable asociado en cada etapa.
+2. **Registro de entrega de refrigerios** — se registra la entrega real al
+   Capitán del equipo clasificado, validando que no exista ya una entrega para
+   el mismo destinatario en el mismo partido.
+3. **Registro y control de dotación** (petos, balones, kits) a árbitros — cada
+   ítem tiene estado `PENDIENTE`, `ENTREGADO` o `DEVUELTO` y un responsable
+   asociado en cada etapa.
 
-**Regla transversal de trazabilidad:** toda entrega (refrigerio o dotación)
-queda registrada con fecha, responsable y destinatario, y se reporta al
-Servicio de Auditoría para su trazabilidad posterior.
+# 4. Badges
+
+[![CI](https://github.com/TECH-CUP-2026-INT/am-logistic-service/actions/workflows/ci-push.yml/badge.svg)](https://github.com/TECH-CUP-2026-INT/am-logistic-service/actions/workflows/ci-push.yml)
+[![Docs](https://img.shields.io/badge/docs-mkdocs-6a1b9a)](https://tech-cup-2026-int.github.io/am-logistic-service/)
+
+# 5. Integrantes del servicio
+
+| Nombre | Contacto |
+|---|---|
+| Tomas Quiceno Ostos | tomas.quiceno-o@mail.escuelaing.edu.co |
+| Sara Viviana Arteaga Rodríguez | sara.arteaga.r91@gmail.com |
+| Julian Tinjaca | julian.tinjaca-c@mail.escuelaing.edu.co |
+| Johan Beltrán | — |
+
+# 6. Introducción rápida para probar
+
+```bash
+docker compose up --build
+```
+
+Levanta MongoDB y el servicio en `http://localhost:8080`. Con el contenedor
+arriba:
+
+- Swagger UI: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+- Health: [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)
+
+Para probar los endpoints protegidos desde Swagger UI, usa el botón
+**Authorize** con cualquier JWT bien formado que incluya los claims `sub`
+(UUID) y `roles` (debe incluir `organizador` para los endpoints de
+escritura) — no hace falta que la firma sea válida, porque este servicio no
+la verifica (esa es responsabilidad del Gateway en producción). Ver la
+sección [Pruebas](#pruebas) más abajo para la suite automatizada.
+
+# 7. Tecnologías usadas
+
+| Tecnología | Uso |
+|---|---|
+| Java 21 | Lenguaje / runtime |
+| Spring Boot | Framework de aplicación |
+| Spring Web | API REST |
+| Spring Data MongoDB | Persistencia orientada a documentos |
+| MongoDB | Base de datos (compatible con Azure Cosmos DB for MongoDB vCore) |
+| Spring Security | JWT del Gateway, API key interna, rol organizador |
+| springdoc-openapi | Swagger UI / especificación OpenAPI |
+| Lombok | Reducción de código boilerplate |
+| Maven (wrapper `mvnw`) | Gestión de dependencias y build |
+| Testcontainers | MongoDB real en pruebas de integración |
+| JaCoCo | Cobertura de pruebas en CI |
+| Docker + Docker Compose | Contenerización y orquestación local |
+| MkDocs (Material) | Documentación técnica extendida ([`docs/`](docs/)) |
+
+---
 
 ## Arquitectura
 
@@ -49,6 +99,10 @@ security/      -> JWT del Gateway (JwtClaimsFilter), API key interna y rol organ
 exception/     -> Excepciones de negocio + manejo global de errores
 config/        -> Configuración de Spring (interceptores, @Async)
 ```
+
+Diagramas de contexto, componentes y clases (editables en
+[draw.io](https://app.diagrams.net/)) en
+[`docs/assets/diagrams/`](docs/assets/diagrams/).
 
 ## Modelo de datos
 
@@ -156,7 +210,8 @@ requerimientos funcionales, cubriendo casos felices y validaciones de
 duplicados/no-encontrado. El test de contexto de Spring (`ServiceLogisticsApplicationTests`)
 levanta un contenedor MongoDB real vía Testcontainers (ver
 `AbstractMongoIntegrationTest`), por lo que requiere Docker disponible en el
-entorno donde se ejecuten los tests.
+entorno donde se ejecuten los tests. El badge de CI al inicio de este README
+refleja el resultado de esta suite en cada push.
 
 **Verificación end-to-end:** además de las pruebas unitarias, el servicio se
 levantó completo con `docker compose` (MongoDB real) y
@@ -182,11 +237,24 @@ entrega.
 | `GET` | `/api/dotacion?arbitroId=&estado=` | admin, organizador | Lista ítems de dotación de un árbitro |
 | `GET` | `/api/auditoria/eventos` | admin, organizador | Lista eventos de auditoría (audit log) de Logística |
 
-Para probar los endpoints protegidos desde Swagger UI, usa el botón
-**Authorize** con cualquier JWT bien formado que incluya los claims `sub`
-(UUID) y `roles` (debe incluir `organizador` para los endpoints de
-escritura) — no hace falta que la firma sea válida, porque este servicio no
-la verifica (esa es responsabilidad del Gateway en producción).
+## Documentación completa
+
+La documentación técnica extendida (introducción, requerimientos,
+configuración, arquitectura y diagramas, API, pruebas, equipo, anexos) está
+construida con [MkDocs](https://www.mkdocs.org/) y vive en [`docs/`](docs/),
+publicada en <https://tech-cup-2026-int.github.io/am-logistic-service/>.
+
+Para servirla en local:
+
+```bash
+pip install -r requirements.txt
+mkdocs serve
+```
+
+Ver [`docs/arquitectura.md`](docs/arquitectura.md) para la arquitectura en
+detalle, y [`docs/assets/diagrams/`](docs/assets/diagrams/) para los
+diagramas fuente en formato draw.io (`.drawio`, XML editable en
+[app.diagrams.net](https://app.diagrams.net/)).
 
 ## Pendientes antes de conectar en serio
 

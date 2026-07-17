@@ -8,16 +8,12 @@ D3 — Operaciones y Comunicación, junto con `am-matches-service` y
 
 ## Integrantes
 
-| Nombre | Rol | Contacto |
-|---|---|---|
-| _Por completar_ | _Por completar_ | _Por completar_ |
-| _Por completar_ | _Por completar_ | _Por completar_ |
-| _Por completar_ | _Por completar_ | _Por completar_ |
-
-!!! note "Pendiente"
-    Esta tabla es una plantilla. Actualízala con los nombres, roles (p. ej.
-    Backend, QA, DevOps, Product Owner) y medio de contacto de cada
-    integrante del equipo antes de publicar la documentación.
+| Nombre | Contacto |
+|---|---|
+| Tomas Quiceno Ostos | tomas.quiceno-o@mail.escuelaing.edu.co |
+| Sara Viviana Arteaga Rodríguez | sara.arteaga.r91@gmail.com |
+| Julian Tinjaca | julian.tinjaca-c@mail.escuelaing.edu.co |
+| Johan Beltrán | — |
 
 ## Repositorio
 
