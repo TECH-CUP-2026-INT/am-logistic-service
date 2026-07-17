@@ -64,7 +64,7 @@ class DefinicionRefrigerioServiceImplTest {
     void crear_conDatosValidos_guardaYRetornaDefinicion() {
         when(torneoClientPort.existePartido(partidoId)).thenReturn(true);
         when(equipoClientPort.existeEquipo(equipoId)).thenReturn(true);
-        when(torneoClientPort.equipoClasificadoSegundaFase(equipoId)).thenReturn(true);
+        when(torneoClientPort.equipoClasificadoSegundaFase(partidoId, equipoId)).thenReturn(true);
         when(repository.existsByPartidoIdAndEquipoId(partidoId, equipoId)).thenReturn(false);
         when(repository.save(any(DefinicionRefrigerio.class))).thenAnswer(inv -> {
             DefinicionRefrigerio entity = inv.getArgument(0);
@@ -106,7 +106,7 @@ class DefinicionRefrigerioServiceImplTest {
     void crear_definicionYaExistenteParaPartidoYEquipo_lanzaDuplicateResource() {
         when(torneoClientPort.existePartido(partidoId)).thenReturn(true);
         when(equipoClientPort.existeEquipo(equipoId)).thenReturn(true);
-        when(torneoClientPort.equipoClasificadoSegundaFase(equipoId)).thenReturn(true);
+        when(torneoClientPort.equipoClasificadoSegundaFase(partidoId, equipoId)).thenReturn(true);
         when(repository.existsByPartidoIdAndEquipoId(partidoId, equipoId)).thenReturn(true);
 
         assertThatThrownBy(() -> service.crear(request, creadoPorId))
@@ -119,7 +119,7 @@ class DefinicionRefrigerioServiceImplTest {
     void crear_equipoNoClasificadoASegundaFase_lanzaEquipoNoClasificado() {
         when(torneoClientPort.existePartido(partidoId)).thenReturn(true);
         when(equipoClientPort.existeEquipo(equipoId)).thenReturn(true);
-        when(torneoClientPort.equipoClasificadoSegundaFase(equipoId)).thenReturn(false);
+        when(torneoClientPort.equipoClasificadoSegundaFase(partidoId, equipoId)).thenReturn(false);
 
         assertThatThrownBy(() -> service.crear(request, creadoPorId))
                 .isInstanceOf(EquipoNoClasificadoException.class);

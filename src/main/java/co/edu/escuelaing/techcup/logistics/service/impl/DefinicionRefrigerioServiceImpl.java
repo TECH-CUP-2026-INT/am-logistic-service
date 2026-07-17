@@ -41,7 +41,7 @@ public class DefinicionRefrigerioServiceImpl implements DefinicionRefrigerioServ
             throw new RecursoNoEncontradoException(
                     "El equipo " + request.equipoId() + " no existe en el Servicio de Equipos");
         }
-        if (!torneoClientPort.equipoClasificadoSegundaFase(request.equipoId())) {
+        if (!torneoClientPort.equipoClasificadoSegundaFase(request.partidoId(), request.equipoId())) {
             throw new EquipoNoClasificadoException(
                     "El equipo " + request.equipoId() + " aun no ha clasificado a segunda fase "
                             + "segun los resultados registrados en el Servicio de Torneos; "
