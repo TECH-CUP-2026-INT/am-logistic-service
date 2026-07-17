@@ -11,9 +11,8 @@ public final class ItemDotacionMapper {
     public static ItemDotacionResponse toResponse(ItemDotacion entity) {
         return new ItemDotacionResponse(
                 entity.getId(),
-                entity.getEquipoId(),
+                entity.getArbitroId(),
                 entity.getTipoItem(),
-                entity.getCantidad(),
                 entity.getEstado(),
                 entity.getResponsableAsignadoId(),
                 entity.getEntregadoPorId(),

@@ -130,4 +130,51 @@ class TorneoClientAdapterTest {
 
         assertThat(adapter.existePartido(partidoId)).isFalse();
     }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void equipoClasificadoSegundaFase_clasificado_retornaTrue() {
+        UUID equipoId = UUID.randomUUID();
+
+        when(restClient.get()).thenReturn(uriSpec);
+        when(uriSpec.uri(eq("/equipos/{equipoId}/clasificacion/segunda-fase"), any(Object[].class)))
+                .thenReturn(uriSpec);
+        when(uriSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.toBodilessEntity()).thenReturn(org.springframework.http.ResponseEntity.ok().build());
+
+        assertThat(adapter.equipoClasificadoSegundaFase(equipoId)).isTrue();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void equipoClasificadoSegundaFase_noClasificado404_retornaFalse() {
+        UUID equipoId = UUID.randomUUID();
+
+        when(restClient.get()).thenReturn(uriSpec);
+        when(uriSpec.uri(eq("/equipos/{equipoId}/clasificacion/segunda-fase"), any(Object[].class)))
+                .thenReturn(uriSpec);
+        when(uriSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.toBodilessEntity()).thenThrow(
+                HttpClientErrorException.create(HttpStatus.NOT_FOUND, "Not Found",
+                        HttpHeaders.EMPTY, new byte[0], null));
+
+        assertThat(adapter.equipoClasificadoSegundaFase(equipoId)).isFalse();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void equipoClasificadoSegundaFase_errorHttpDistintoDe404_lanzaIntegrationException() {
+        UUID equipoId = UUID.randomUUID();
+
+        when(restClient.get()).thenReturn(uriSpec);
+        when(uriSpec.uri(eq("/equipos/{equipoId}/clasificacion/segunda-fase"), any(Object[].class)))
+                .thenReturn(uriSpec);
+        when(uriSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.toBodilessEntity()).thenThrow(
+                HttpClientErrorException.create(HttpStatus.SERVICE_UNAVAILABLE, "Unavailable",
+                        HttpHeaders.EMPTY, new byte[0], null));
+
+        assertThatThrownBy(() -> adapter.equipoClasificadoSegundaFase(equipoId))
+                .isInstanceOf(IntegrationException.class);
+    }
 }

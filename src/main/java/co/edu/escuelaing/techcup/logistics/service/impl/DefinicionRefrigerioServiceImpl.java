@@ -15,6 +15,7 @@ import co.edu.escuelaing.techcup.logistics.dto.response.DefinicionRefrigerioResp
 import co.edu.escuelaing.techcup.logistics.entity.DefinicionRefrigerio;
 import co.edu.escuelaing.techcup.logistics.entity.ItemRefrigerioDefinido;
 import co.edu.escuelaing.techcup.logistics.exception.DuplicateResourceException;
+import co.edu.escuelaing.techcup.logistics.exception.EquipoNoClasificadoException;
 import co.edu.escuelaing.techcup.logistics.exception.RecursoNoEncontradoException;
 import co.edu.escuelaing.techcup.logistics.mapper.DefinicionRefrigerioMapper;
 import co.edu.escuelaing.techcup.logistics.repository.DefinicionRefrigerioRepository;
@@ -39,6 +40,12 @@ public class DefinicionRefrigerioServiceImpl implements DefinicionRefrigerioServ
         if (!equipoClientPort.existeEquipo(request.equipoId())) {
             throw new RecursoNoEncontradoException(
                     "El equipo " + request.equipoId() + " no existe en el Servicio de Equipos");
+        }
+        if (!torneoClientPort.equipoClasificadoSegundaFase(request.equipoId())) {
+            throw new EquipoNoClasificadoException(
+                    "El equipo " + request.equipoId() + " aun no ha clasificado a segunda fase "
+                            + "segun los resultados registrados en el Servicio de Torneos; "
+                            + "no se puede definir un refrigerio para el");
         }
         if (repository.existsByPartidoIdAndEquipoId(request.partidoId(), request.equipoId())) {
             throw new DuplicateResourceException(

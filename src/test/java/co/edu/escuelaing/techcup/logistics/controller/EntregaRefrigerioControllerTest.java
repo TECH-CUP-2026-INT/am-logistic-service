@@ -26,7 +26,6 @@ import co.edu.escuelaing.techcup.logistics.config.SecurityConfig;
 import co.edu.escuelaing.techcup.logistics.config.WebMvcConfig;
 import co.edu.escuelaing.techcup.logistics.dto.request.RegistrarEntregaRefrigerioRequest;
 import co.edu.escuelaing.techcup.logistics.dto.response.EntregaRefrigerioResponse;
-import co.edu.escuelaing.techcup.logistics.enums.TipoDestinatario;
 import co.edu.escuelaing.techcup.logistics.security.CurrentUserProvider;
 import co.edu.escuelaing.techcup.logistics.security.InternalApiKeyFilter;
 import co.edu.escuelaing.techcup.logistics.security.JwtClaimsFilter;
@@ -54,26 +53,28 @@ class EntregaRefrigerioControllerTest {
         UUID userId = UUID.randomUUID();
         UUID partidoId = UUID.randomUUID();
         UUID equipoId = UUID.randomUUID();
+        UUID capitanId = UUID.randomUUID();
         RegistrarEntregaRefrigerioRequest request = new RegistrarEntregaRefrigerioRequest(
-                UUID.randomUUID(), TipoDestinatario.EQUIPO, equipoId, null);
+                UUID.randomUUID(), capitanId, null);
 
         when(service.registrar(any(), any())).thenReturn(new EntregaRefrigerioResponse(
                 UUID.randomUUID(), request.definicionRefrigerioId(), partidoId,
-                TipoDestinatario.EQUIPO, equipoId, userId, Instant.now(), null));
+                equipoId, capitanId, userId, Instant.now(), null));
 
         mockMvc.perform(post("/api/refrigerios/entregas")
                         .header("Authorization", JwtTestSupport.bearer(userId, "ORGANIZADOR"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.responsableId").value(userId.toString()));
+                .andExpect(jsonPath("$.responsableId").value(userId.toString()))
+                .andExpect(jsonPath("$.capitanId").value(capitanId.toString()));
     }
 
     @Test
     void registrar_sinRolOrganizador_retorna403() throws Exception {
         UUID userId = UUID.randomUUID();
         RegistrarEntregaRefrigerioRequest request = new RegistrarEntregaRefrigerioRequest(
-                UUID.randomUUID(), TipoDestinatario.EQUIPO, UUID.randomUUID(), null);
+                UUID.randomUUID(), UUID.randomUUID(), null);
 
         mockMvc.perform(post("/api/refrigerios/entregas")
                         .header("Authorization", JwtTestSupport.bearer(userId, "JUGADOR"))
@@ -85,7 +86,7 @@ class EntregaRefrigerioControllerTest {
     @Test
     void registrar_sinAutenticacion_retornaNoAutorizado() throws Exception {
         RegistrarEntregaRefrigerioRequest request = new RegistrarEntregaRefrigerioRequest(
-                UUID.randomUUID(), TipoDestinatario.EQUIPO, UUID.randomUUID(), null);
+                UUID.randomUUID(), UUID.randomUUID(), null);
 
         mockMvc.perform(post("/api/refrigerios/entregas")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -94,14 +95,25 @@ class EntregaRefrigerioControllerTest {
     }
 
     @Test
-    void listarPorPartido_autenticadoSinRolOrganizador_retorna200() throws Exception {
+    void listarPorPartido_conRolOrganizador_retorna200() throws Exception {
         UUID userId = UUID.randomUUID();
         UUID partidoId = UUID.randomUUID();
         when(service.listarPorPartido(partidoId)).thenReturn(List.of());
 
         mockMvc.perform(get("/api/refrigerios/entregas")
-                        .header("Authorization", JwtTestSupport.bearer(userId, "JUGADOR"))
+                        .header("Authorization", JwtTestSupport.bearer(userId, "ORGANIZADOR"))
                         .param("partidoId", partidoId.toString()))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void listarPorPartido_sinRolAutorizado_retorna403() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID partidoId = UUID.randomUUID();
+
+        mockMvc.perform(get("/api/refrigerios/entregas")
+                        .header("Authorization", JwtTestSupport.bearer(userId, "JUGADOR"))
+                        .param("partidoId", partidoId.toString()))
+                .andExpect(status().isForbidden());
     }
 }

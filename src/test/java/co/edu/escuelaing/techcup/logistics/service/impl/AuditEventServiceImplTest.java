@@ -20,7 +20,6 @@ import co.edu.escuelaing.techcup.logistics.entity.DefinicionRefrigerio;
 import co.edu.escuelaing.techcup.logistics.entity.EntregaRefrigerio;
 import co.edu.escuelaing.techcup.logistics.entity.ItemDotacion;
 import co.edu.escuelaing.techcup.logistics.enums.EstadoDotacion;
-import co.edu.escuelaing.techcup.logistics.enums.TipoDestinatario;
 import co.edu.escuelaing.techcup.logistics.enums.TipoEventoAuditoria;
 import co.edu.escuelaing.techcup.logistics.enums.TipoItemDotacion;
 import co.edu.escuelaing.techcup.logistics.repository.DefinicionRefrigerioRepository;
@@ -63,17 +62,16 @@ class AuditEventServiceImplTest {
                 .id(UUID.randomUUID())
                 .definicionRefrigerioId(definicion.getId())
                 .partidoId(definicion.getPartidoId())
-                .tipoDestinatario(TipoDestinatario.EQUIPO)
-                .destinatarioId(UUID.randomUUID())
+                .equipoId(definicion.getEquipoId())
+                .capitanId(UUID.randomUUID())
                 .responsableId(UUID.randomUUID())
                 .fechaEntrega(base.minus(2, ChronoUnit.HOURS))
                 .build();
 
         ItemDotacion itemDevuelto = ItemDotacion.builder()
                 .id(UUID.randomUUID())
-                .equipoId(UUID.randomUUID())
+                .arbitroId(UUID.randomUUID())
                 .tipoItem(TipoItemDotacion.PETO)
-                .cantidad(1)
                 .estado(EstadoDotacion.DEVUELTO)
                 .responsableAsignadoId(UUID.randomUUID())
                 .entregadoPorId(UUID.randomUUID())
@@ -101,9 +99,8 @@ class AuditEventServiceImplTest {
     void listarEventos_itemPendiente_soloGeneraEventoDeRegistro() {
         ItemDotacion pendiente = ItemDotacion.builder()
                 .id(UUID.randomUUID())
-                .equipoId(UUID.randomUUID())
+                .arbitroId(UUID.randomUUID())
                 .tipoItem(TipoItemDotacion.BALON)
-                .cantidad(2)
                 .estado(EstadoDotacion.PENDIENTE)
                 .responsableAsignadoId(UUID.randomUUID())
                 .fechaRegistro(base)

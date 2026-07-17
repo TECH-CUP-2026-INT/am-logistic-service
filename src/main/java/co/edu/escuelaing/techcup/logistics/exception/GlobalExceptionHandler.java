@@ -37,6 +37,11 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.FORBIDDEN, e.getMessage());
     }
 
+    @ExceptionHandler(EquipoNoClasificadoException.class)
+    public ResponseEntity<ErrorResponse> handleEquipoNoClasificado(EquipoNoClasificadoException e) {
+        return build(HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException e) {
         return build(HttpStatus.FORBIDDEN, "No tiene el rol requerido para acceder a este recurso");

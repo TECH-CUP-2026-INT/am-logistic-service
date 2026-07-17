@@ -28,7 +28,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuditEventServiceImpl implements AuditEventService {
 
-    private static final String PARA_EQUIPO = " para equipo ";
+    private static final String PARA_ARBITRO = " para arbitro ";
 
     private final DefinicionRefrigerioRepository definicionRefrigerioRepository;
     private final EntregaRefrigerioRepository entregaRefrigerioRepository;
@@ -54,7 +54,8 @@ public class AuditEventServiceImpl implements AuditEventService {
                     entrega.getId(),
                     entrega.getResponsableId(),
                     entrega.getFechaEntrega(),
-                    "Entrega de refrigerio a " + entrega.getTipoDestinatario() + " " + entrega.getDestinatarioId()));
+                    "Entrega de refrigerio al capitan " + entrega.getCapitanId()
+                            + " del equipo " + entrega.getEquipoId()));
         }
 
         for (ItemDotacion item : itemDotacionRepository.findAll()) {
@@ -63,7 +64,7 @@ public class AuditEventServiceImpl implements AuditEventService {
                     item.getId(),
                     item.getResponsableAsignadoId(),
                     item.getFechaRegistro(),
-                    "Registro de " + item.getTipoItem() + PARA_EQUIPO + item.getEquipoId()));
+                    "Registro de " + item.getTipoItem() + PARA_ARBITRO + item.getArbitroId()));
 
             if (item.getEstado() == EstadoDotacion.ENTREGADO || item.getEstado() == EstadoDotacion.DEVUELTO) {
                 eventos.add(new AuditEventResponse(
@@ -71,7 +72,7 @@ public class AuditEventServiceImpl implements AuditEventService {
                         item.getId(),
                         item.getEntregadoPorId(),
                         item.getFechaEntrega(),
-                        "Entrega de " + item.getTipoItem() + PARA_EQUIPO + item.getEquipoId()));
+                        "Entrega de " + item.getTipoItem() + PARA_ARBITRO + item.getArbitroId()));
             }
 
             if (item.getEstado() == EstadoDotacion.DEVUELTO) {
@@ -80,7 +81,7 @@ public class AuditEventServiceImpl implements AuditEventService {
                         item.getId(),
                         item.getRecibidoPorId(),
                         item.getFechaDevolucion(),
-                        "Devolucion de " + item.getTipoItem() + PARA_EQUIPO + item.getEquipoId()));
+                        "Devolucion de " + item.getTipoItem() + PARA_ARBITRO + item.getArbitroId()));
             }
         }
 

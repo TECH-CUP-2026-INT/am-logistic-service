@@ -55,8 +55,8 @@ config/        -> Configuración de Spring (interceptores, @Async)
 | Entidad | Descripción | Restricción clave |
 |---|---|---|
 | `DefinicionRefrigerio` | Qué refrigerio(s) corresponden a un equipo en un partido | única por `(partidoId, equipoId)` |
-| `EntregaRefrigerio` | Entrega real de un refrigerio a un equipo o jugador | única por `(partidoId, tipoDestinatario, destinatarioId)` |
-| `ItemDotacion` | Ítem de dotación (peto/balón/kit) con estado y responsable | no se puede marcar `ENTREGADO` dos veces |
+| `EntregaRefrigerio` | Entrega real de un refrigerio al Capitán del equipo clasificado | única por `(partidoId, capitanId)`; `capitanId` se valida contra Equipos como capitán del equipo |
+| `ItemDotacion` | Unidad física individual de dotación (peto/balón/kit) entregada a un árbitro, con estado y responsable | un documento por unidad física (rastreo individual); solo puede entregarse a un árbitro; no se puede marcar `ENTREGADO` dos veces |
 
 **Supuesto de diseño:** todos los identificadores propios y externos
 (`partidoId`, `equipoId`, `jugadorId`, `responsableId`, etc.) se modelan como
@@ -172,13 +172,15 @@ entrega.
 
 | Método | Ruta | Rol requerido | Descripción |
 |---|---|---|---|
-| `POST` | `/api/refrigerios/definiciones` | organizador | Define refrigerio(s) para un equipo/partido |
-| `GET` | `/api/refrigerios/definiciones?partidoId=` | — | Lista definiciones de un partido |
-| `POST` | `/api/refrigerios/entregas` | organizador | Registra la entrega real de un refrigerio |
-| `GET` | `/api/refrigerios/entregas?partidoId=` | — | Lista entregas de un partido |
-| `POST` | `/api/dotacion` | organizador | Registra un ítem de dotación como `PENDIENTE` |
+| `POST` | `/api/refrigerios/definiciones` | organizador | Define refrigerio(s) para un equipo/partido (solo equipos clasificados a segunda fase) |
+| `GET` | `/api/refrigerios/definiciones?partidoId=` | admin, organizador | Lista definiciones de un partido |
+| `POST` | `/api/refrigerios/entregas` | organizador | Registra la entrega real de un refrigerio al Capitán del equipo clasificado |
+| `GET` | `/api/refrigerios/entregas?partidoId=` | admin, organizador | Lista entregas de un partido |
+| `POST` | `/api/dotacion` | organizador | Registra items de dotación como `PENDIENTE`, uno por unidad física, a un árbitro |
 | `PATCH` | `/api/dotacion/{itemId}/entrega` | organizador | Marca un ítem de dotación como `ENTREGADO` |
-| `GET` | `/api/dotacion?equipoId=&estado=` | — | Lista ítems de dotación de un equipo |
+| `PATCH` | `/api/dotacion/{itemId}/devolucion` | organizador | Registra la devolución de un ítem de dotación |
+| `GET` | `/api/dotacion?arbitroId=&estado=` | admin, organizador | Lista ítems de dotación de un árbitro |
+| `GET` | `/api/auditoria/eventos` | admin, organizador | Lista eventos de auditoría (audit log) de Logística |
 
 Para probar los endpoints protegidos desde Swagger UI, usa el botón
 **Authorize** con cualquier JWT bien formado que incluya los claims `sub`

@@ -18,7 +18,9 @@ import lombok.extern.slf4j.Slf4j;
  * Nota: contrato pendiente de confirmar con el equipo de Torneos:
  *   - Ruta real para consultar un partido por id (se asume GET /partidos/{id}).
  *   - Forma exacta del payload de respuesta (se asume id, jornadaId, fechaProgramada).
- *   - Codigo de error para "partido no existe" (se asume 404).
+ *   - Ruta real para validar clasificacion a segunda fase por resultados
+ *     (se asume GET /equipos/{equipoId}/clasificacion/segunda-fase).
+ *   - Codigo de error para "partido no existe" / "equipo no clasificado" (se asume 404).
  */
 @Component
 @Slf4j
@@ -53,5 +55,25 @@ public class TorneoClientAdapter implements TorneoClientPort {
     @Override
     public boolean existePartido(UUID partidoId) {
         return obtenerPartido(partidoId).isPresent();
+    }
+
+    @Override
+    public boolean equipoClasificadoSegundaFase(UUID equipoId) {
+        try {
+            restClient.get()
+                    .uri("/equipos/{equipoId}/clasificacion/segunda-fase", equipoId)
+                    .retrieve()
+                    .toBodilessEntity();
+            return true;
+        } catch (RestClientResponseException e) {
+            if (e.getStatusCode().value() == 404) {
+                return false;
+            }
+            log.warn("Fallo al consultar la clasificacion del equipo {} en Torneos: {}", equipoId, e.getMessage());
+            throw new IntegrationException("No fue posible validar la clasificacion con el Servicio de Torneos", e);
+        } catch (Exception e) {
+            log.warn("Fallo al consultar la clasificacion del equipo {} en Torneos: {}", equipoId, e.getMessage());
+            throw new IntegrationException("No fue posible validar la clasificacion con el Servicio de Torneos", e);
+        }
     }
 }

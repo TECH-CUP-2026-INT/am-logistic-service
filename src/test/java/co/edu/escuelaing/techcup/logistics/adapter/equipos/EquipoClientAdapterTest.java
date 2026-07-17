@@ -109,4 +109,64 @@ class EquipoClientAdapterTest {
 
         assertThat(adapter.existeJugadorEnEquipo(jugadorId, equipoId)).isTrue();
     }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void esCapitanDelEquipo_esCapitan_retornaTrue() {
+        UUID jugadorId = UUID.randomUUID();
+        UUID equipoId = UUID.randomUUID();
+
+        when(restClient.get()).thenReturn(uriSpec);
+        when(uriSpec.uri(eq("/equipos/{equipoId}/capitan/{jugadorId}"), any(Object[].class)))
+                .thenReturn(uriSpec);
+        when(uriSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.toBodilessEntity()).thenReturn(ResponseEntity.ok().build());
+
+        assertThat(adapter.esCapitanDelEquipo(jugadorId, equipoId)).isTrue();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void esCapitanDelEquipo_noEsCapitan404_retornaFalse() {
+        UUID jugadorId = UUID.randomUUID();
+        UUID equipoId = UUID.randomUUID();
+
+        when(restClient.get()).thenReturn(uriSpec);
+        when(uriSpec.uri(eq("/equipos/{equipoId}/capitan/{jugadorId}"), any(Object[].class)))
+                .thenReturn(uriSpec);
+        when(uriSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.toBodilessEntity()).thenThrow(
+                HttpClientErrorException.create(HttpStatus.NOT_FOUND, "Not Found",
+                        HttpHeaders.EMPTY, new byte[0], null));
+
+        assertThat(adapter.esCapitanDelEquipo(jugadorId, equipoId)).isFalse();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void existeArbitro_existe_retornaTrue() {
+        UUID arbitroId = UUID.randomUUID();
+
+        when(restClient.get()).thenReturn(uriSpec);
+        when(uriSpec.uri(eq("/arbitros/{id}"), any(Object[].class))).thenReturn(uriSpec);
+        when(uriSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.toBodilessEntity()).thenReturn(ResponseEntity.ok().build());
+
+        assertThat(adapter.existeArbitro(arbitroId)).isTrue();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void existeArbitro_noExiste404_retornaFalse() {
+        UUID arbitroId = UUID.randomUUID();
+
+        when(restClient.get()).thenReturn(uriSpec);
+        when(uriSpec.uri(eq("/arbitros/{id}"), any(Object[].class))).thenReturn(uriSpec);
+        when(uriSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.toBodilessEntity()).thenThrow(
+                HttpClientErrorException.create(HttpStatus.NOT_FOUND, "Not Found",
+                        HttpHeaders.EMPTY, new byte[0], null));
+
+        assertThat(adapter.existeArbitro(arbitroId)).isFalse();
+    }
 }

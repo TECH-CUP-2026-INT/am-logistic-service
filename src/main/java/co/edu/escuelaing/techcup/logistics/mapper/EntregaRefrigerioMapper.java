@@ -13,8 +13,8 @@ public final class EntregaRefrigerioMapper {
                 entity.getId(),
                 entity.getDefinicionRefrigerioId(),
                 entity.getPartidoId(),
-                entity.getTipoDestinatario(),
-                entity.getDestinatarioId(),
+                entity.getEquipoId(),
+                entity.getCapitanId(),
                 entity.getResponsableId(),
                 entity.getFechaEntrega(),
                 entity.getObservaciones()

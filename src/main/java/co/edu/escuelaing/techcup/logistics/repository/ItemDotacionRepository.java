@@ -10,7 +10,7 @@ import co.edu.escuelaing.techcup.logistics.enums.EstadoDotacion;
 
 public interface ItemDotacionRepository extends MongoRepository<ItemDotacion, UUID> {
 
-    List<ItemDotacion> findByEquipoId(UUID equipoId);
+    List<ItemDotacion> findByArbitroId(UUID arbitroId);
 
-    List<ItemDotacion> findByEquipoIdAndEstado(UUID equipoId, EstadoDotacion estado);
+    List<ItemDotacion> findByArbitroIdAndEstado(UUID arbitroId, EstadoDotacion estado);
 }

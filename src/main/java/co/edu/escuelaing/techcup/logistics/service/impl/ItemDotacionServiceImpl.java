@@ -1,6 +1,7 @@
 package co.edu.escuelaing.techcup.logistics.service.impl;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,23 +35,28 @@ public class ItemDotacionServiceImpl implements ItemDotacionService {
 
     @Override
     @Transactional
-    public ItemDotacionResponse registrar(RegistrarItemDotacionRequest request) {
-        if (!equipoClientPort.existeEquipo(request.equipoId())) {
+    public List<ItemDotacionResponse> registrar(RegistrarItemDotacionRequest request) {
+        if (!equipoClientPort.existeArbitro(request.arbitroId())) {
             throw new RecursoNoEncontradoException(
-                    "El equipo " + request.equipoId() + " no existe en el Servicio de Equipos");
+                    "El arbitro " + request.arbitroId() + " no existe en el Servicio de Equipos");
         }
 
-        ItemDotacion item = ItemDotacion.builder()
-                .equipoId(request.equipoId())
-                .tipoItem(request.tipoItem())
-                .cantidad(request.cantidad())
-                .estado(EstadoDotacion.PENDIENTE)
-                .responsableAsignadoId(request.responsableAsignadoId())
-                .fechaRegistro(Instant.now())
-                .observaciones(request.observaciones())
-                .build();
+        Instant fechaRegistro = Instant.now();
+        List<ItemDotacion> items = new ArrayList<>();
+        for (int i = 0; i < request.cantidad(); i++) {
+            items.add(ItemDotacion.builder()
+                    .arbitroId(request.arbitroId())
+                    .tipoItem(request.tipoItem())
+                    .estado(EstadoDotacion.PENDIENTE)
+                    .responsableAsignadoId(request.responsableAsignadoId())
+                    .fechaRegistro(fechaRegistro)
+                    .observaciones(request.observaciones())
+                    .build());
+        }
 
-        return ItemDotacionMapper.toResponse(repository.save(item));
+        return repository.saveAll(items).stream()
+                .map(ItemDotacionMapper::toResponse)
+                .toList();
     }
 
     @Override
@@ -76,8 +82,8 @@ public class ItemDotacionServiceImpl implements ItemDotacionService {
         auditoriaClientPort.reportarEntrega(new RegistroAuditoriaDTO(
                 TipoEntregaAuditoria.DOTACION,
                 actualizado.getId(),
-                "EQUIPO",
-                actualizado.getEquipoId(),
+                "ARBITRO",
+                actualizado.getArbitroId(),
                 actualizado.getEntregadoPorId(),
                 actualizado.getFechaEntrega()
         ));
@@ -110,8 +116,8 @@ public class ItemDotacionServiceImpl implements ItemDotacionService {
         auditoriaClientPort.reportarEntrega(new RegistroAuditoriaDTO(
                 TipoEntregaAuditoria.DOTACION,
                 actualizado.getId(),
-                "EQUIPO",
-                actualizado.getEquipoId(),
+                "ARBITRO",
+                actualizado.getArbitroId(),
                 actualizado.getRecibidoPorId(),
                 actualizado.getFechaDevolucion()
         ));
@@ -120,10 +126,10 @@ public class ItemDotacionServiceImpl implements ItemDotacionService {
     }
 
     @Override
-    public List<ItemDotacionResponse> listarPorEquipo(UUID equipoId, EstadoDotacion estado) {
+    public List<ItemDotacionResponse> listarPorArbitro(UUID arbitroId, EstadoDotacion estado) {
         List<ItemDotacion> items = estado == null
-                ? repository.findByEquipoId(equipoId)
-                : repository.findByEquipoIdAndEstado(equipoId, estado);
+                ? repository.findByArbitroId(arbitroId)
+                : repository.findByArbitroIdAndEstado(arbitroId, estado);
         return items.stream().map(ItemDotacionMapper::toResponse).toList();
     }
 }

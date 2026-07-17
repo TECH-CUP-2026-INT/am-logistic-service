@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -48,44 +49,47 @@ class ItemDotacionServiceImplTest {
     @InjectMocks
     private ItemDotacionServiceImpl service;
 
-    private UUID equipoId;
+    private UUID arbitroId;
     private UUID responsableId;
 
     @BeforeEach
     void setUp() {
-        equipoId = UUID.randomUUID();
+        arbitroId = UUID.randomUUID();
         responsableId = UUID.randomUUID();
     }
 
     @Test
-    void registrar_equipoValido_guardaItemComoPendiente() {
+    void registrar_arbitroValido_guardaUnItemPorUnidadComoPendiente() {
         RegistrarItemDotacionRequest request = new RegistrarItemDotacionRequest(
-                equipoId, TipoItemDotacion.PETO, 20, responsableId, null);
+                arbitroId, TipoItemDotacion.PETO, 3, responsableId, null);
 
-        when(equipoClientPort.existeEquipo(equipoId)).thenReturn(true);
-        when(repository.save(any(ItemDotacion.class))).thenAnswer(inv -> {
-            ItemDotacion entity = inv.getArgument(0);
-            entity.setId(UUID.randomUUID());
-            return entity;
+        when(equipoClientPort.existeArbitro(arbitroId)).thenReturn(true);
+        when(repository.saveAll(any())).thenAnswer(inv -> {
+            List<ItemDotacion> items = inv.getArgument(0);
+            items.forEach(item -> item.setId(UUID.randomUUID()));
+            return items;
         });
 
-        ItemDotacionResponse response = service.registrar(request);
+        List<ItemDotacionResponse> response = service.registrar(request);
 
-        assertThat(response.estado()).isEqualTo(EstadoDotacion.PENDIENTE);
-        assertThat(response.equipoId()).isEqualTo(equipoId);
-        assertThat(response.cantidad()).isEqualTo(20);
+        assertThat(response).hasSize(3);
+        assertThat(response).allSatisfy(item -> {
+            assertThat(item.estado()).isEqualTo(EstadoDotacion.PENDIENTE);
+            assertThat(item.arbitroId()).isEqualTo(arbitroId);
+        });
+        assertThat(response.stream().map(ItemDotacionResponse::id).distinct()).hasSize(3);
     }
 
     @Test
-    void registrar_equipoInexistente_lanzaRecursoNoEncontrado() {
+    void registrar_arbitroInexistente_lanzaRecursoNoEncontrado() {
         RegistrarItemDotacionRequest request = new RegistrarItemDotacionRequest(
-                equipoId, TipoItemDotacion.BALON, 5, responsableId, null);
-        when(equipoClientPort.existeEquipo(equipoId)).thenReturn(false);
+                arbitroId, TipoItemDotacion.BALON, 5, responsableId, null);
+        when(equipoClientPort.existeArbitro(arbitroId)).thenReturn(false);
 
         assertThatThrownBy(() -> service.registrar(request))
                 .isInstanceOf(RecursoNoEncontradoException.class);
 
-        verify(repository, never()).save(any());
+        verify(repository, never()).saveAll(any());
     }
 
     @Test
@@ -93,9 +97,8 @@ class ItemDotacionServiceImplTest {
         UUID itemId = UUID.randomUUID();
         ItemDotacion pendiente = ItemDotacion.builder()
                 .id(itemId)
-                .equipoId(equipoId)
+                .arbitroId(arbitroId)
                 .tipoItem(TipoItemDotacion.KIT)
-                .cantidad(1)
                 .estado(EstadoDotacion.PENDIENTE)
                 .responsableAsignadoId(responsableId)
                 .fechaRegistro(Instant.now())
@@ -118,9 +121,8 @@ class ItemDotacionServiceImplTest {
         UUID itemId = UUID.randomUUID();
         ItemDotacion yaEntregado = ItemDotacion.builder()
                 .id(itemId)
-                .equipoId(equipoId)
+                .arbitroId(arbitroId)
                 .tipoItem(TipoItemDotacion.KIT)
-                .cantidad(1)
                 .estado(EstadoDotacion.ENTREGADO)
                 .responsableAsignadoId(responsableId)
                 .entregadoPorId(responsableId)
@@ -154,9 +156,8 @@ class ItemDotacionServiceImplTest {
         UUID organizadorId = UUID.randomUUID();
         ItemDotacion entregado = ItemDotacion.builder()
                 .id(itemId)
-                .equipoId(equipoId)
+                .arbitroId(arbitroId)
                 .tipoItem(TipoItemDotacion.KIT)
-                .cantidad(1)
                 .estado(EstadoDotacion.ENTREGADO)
                 .responsableAsignadoId(responsableId)
                 .entregadoPorId(responsableId)
@@ -181,9 +182,8 @@ class ItemDotacionServiceImplTest {
         UUID itemId = UUID.randomUUID();
         ItemDotacion pendiente = ItemDotacion.builder()
                 .id(itemId)
-                .equipoId(equipoId)
+                .arbitroId(arbitroId)
                 .tipoItem(TipoItemDotacion.KIT)
-                .cantidad(1)
                 .estado(EstadoDotacion.PENDIENTE)
                 .responsableAsignadoId(responsableId)
                 .fechaRegistro(Instant.now())
@@ -204,9 +204,8 @@ class ItemDotacionServiceImplTest {
         UUID itemId = UUID.randomUUID();
         ItemDotacion devuelto = ItemDotacion.builder()
                 .id(itemId)
-                .equipoId(equipoId)
+                .arbitroId(arbitroId)
                 .tipoItem(TipoItemDotacion.KIT)
-                .cantidad(1)
                 .estado(EstadoDotacion.DEVUELTO)
                 .responsableAsignadoId(responsableId)
                 .fechaRegistro(Instant.now())
@@ -232,29 +231,28 @@ class ItemDotacionServiceImplTest {
     }
 
     @Test
-    void listarPorEquipo_sinFiltroDeEstado_usaFindByEquipoId() {
+    void listarPorArbitro_sinFiltroDeEstado_usaFindByArbitroId() {
         ItemDotacion item = ItemDotacion.builder()
                 .id(UUID.randomUUID())
-                .equipoId(equipoId)
+                .arbitroId(arbitroId)
                 .tipoItem(TipoItemDotacion.PETO)
-                .cantidad(1)
                 .estado(EstadoDotacion.PENDIENTE)
                 .responsableAsignadoId(responsableId)
                 .fechaRegistro(Instant.now())
                 .build();
-        when(repository.findByEquipoId(equipoId)).thenReturn(java.util.List.of(item));
+        when(repository.findByArbitroId(arbitroId)).thenReturn(List.of(item));
 
-        var result = service.listarPorEquipo(equipoId, null);
+        var result = service.listarPorArbitro(arbitroId, null);
 
         assertThat(result).hasSize(1);
     }
 
     @Test
-    void listarPorEquipo_conFiltroDeEstado_usaFindByEquipoIdAndEstado() {
-        when(repository.findByEquipoIdAndEstado(equipoId, EstadoDotacion.ENTREGADO))
-                .thenReturn(java.util.List.of());
+    void listarPorArbitro_conFiltroDeEstado_usaFindByArbitroIdAndEstado() {
+        when(repository.findByArbitroIdAndEstado(arbitroId, EstadoDotacion.ENTREGADO))
+                .thenReturn(List.of());
 
-        var result = service.listarPorEquipo(equipoId, EstadoDotacion.ENTREGADO);
+        var result = service.listarPorArbitro(arbitroId, EstadoDotacion.ENTREGADO);
 
         assertThat(result).isEmpty();
     }

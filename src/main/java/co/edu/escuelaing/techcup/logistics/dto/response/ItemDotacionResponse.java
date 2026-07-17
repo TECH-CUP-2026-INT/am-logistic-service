@@ -8,9 +8,8 @@ import co.edu.escuelaing.techcup.logistics.enums.TipoItemDotacion;
 
 public record ItemDotacionResponse(
         UUID id,
-        UUID equipoId,
+        UUID arbitroId,
         TipoItemDotacion tipoItem,
-        Integer cantidad,
         EstadoDotacion estado,
         UUID responsableAsignadoId,
         UUID entregadoPorId,

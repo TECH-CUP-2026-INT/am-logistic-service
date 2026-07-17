@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -36,9 +37,12 @@ public class DefinicionRefrigerioController {
     @RequireOrganizador
     @Operation(
             summary = "Define refrigerio(s) para un equipo en un partido",
-            description = "Requiere rol organizador. La identidad y el rol se extraen del JWT "
-                    + "(header Authorization: Bearer) ya validado por el API Gateway; el "
-                    + "interceptor de seguridad rechaza la solicitud si el rol no es organizador."
+            description = "Requiere rol organizador. Solo se permite para equipos que ya "
+                    + "clasificaron a segunda fase segun los resultados del Servicio de Torneos "
+                    + "(identificado automaticamente, sin intervencion manual). La identidad y el "
+                    + "rol se extraen del JWT (header Authorization: Bearer) ya validado por el API "
+                    + "Gateway; el interceptor de seguridad rechaza la solicitud si el rol no es "
+                    + "organizador."
     )
     public ResponseEntity<DefinicionRefrigerioResponse> crear(
             @Valid @RequestBody CrearDefinicionRefrigerioRequest request) {
@@ -48,6 +52,8 @@ public class DefinicionRefrigerioController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','ORGANIZADOR')")
+    @Operation(summary = "Lista las definiciones de refrigerio de un partido", description = "Requiere rol ADMIN u ORGANIZADOR.")
     public ResponseEntity<List<DefinicionRefrigerioResponse>> listarPorPartido(
             @RequestParam UUID partidoId) {
         return ResponseEntity.ok(service.listarPorPartido(partidoId));

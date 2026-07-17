@@ -54,6 +54,15 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void handleEquipoNoClasificado_returns422() {
+        ResponseEntity<ErrorResponse> response =
+                handler.handleEquipoNoClasificado(new EquipoNoClasificadoException("no clasificado"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(response.getBody().message()).isEqualTo("no clasificado");
+    }
+
+    @Test
     void handleAccessDenied_returns403() {
         ResponseEntity<ErrorResponse> response =
                 handler.handleAccessDenied(new AccessDeniedException("denegado"));

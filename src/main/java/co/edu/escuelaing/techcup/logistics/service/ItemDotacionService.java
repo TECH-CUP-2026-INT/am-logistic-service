@@ -11,12 +11,12 @@ import co.edu.escuelaing.techcup.logistics.enums.EstadoDotacion;
 
 public interface ItemDotacionService {
 
-    ItemDotacionResponse registrar(RegistrarItemDotacionRequest request);
+    List<ItemDotacionResponse> registrar(RegistrarItemDotacionRequest request);
 
     ItemDotacionResponse marcarEntregado(UUID itemId, MarcarDotacionEntregadaRequest request, UUID entregadoPorId);
 
     ItemDotacionResponse registrarDevolucion(
             UUID itemId, RegistrarDevolucionDotacionRequest request, UUID recibidoPorId);
 
-    List<ItemDotacionResponse> listarPorEquipo(UUID equipoId, EstadoDotacion estado);
+    List<ItemDotacionResponse> listarPorArbitro(UUID arbitroId, EstadoDotacion estado);
 }

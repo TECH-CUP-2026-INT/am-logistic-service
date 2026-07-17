@@ -22,8 +22,8 @@ config/        -> Configuración de Spring (seguridad, interceptores, @Async)
 | Entidad | Descripción | Restricción clave |
 |---|---|---|
 | `DefinicionRefrigerio` | Qué refrigerio(s) corresponden a un equipo en un partido | única por `(partidoId, equipoId)` |
-| `EntregaRefrigerio` | Entrega real de un refrigerio a un equipo o jugador | única por `(partidoId, tipoDestinatario, destinatarioId)` |
-| `ItemDotacion` | Ítem de dotación (peto/balón/kit) con estado y responsable | no se puede marcar `ENTREGADO` dos veces; solo se puede registrar la devolución (`DEVUELTO`) si el estado actual es `ENTREGADO` |
+| `EntregaRefrigerio` | Entrega real de un refrigerio al Capitán del equipo clasificado | única por `(partidoId, capitanId)`; `capitanId` se valida contra Equipos como capitán del equipo |
+| `ItemDotacion` | Unidad física individual de dotación (peto/balón/kit) entregada a un árbitro, con estado y responsable | un documento por unidad física (rastreo individual); solo puede entregarse a un árbitro; no se puede marcar `ENTREGADO` dos veces; solo se puede registrar la devolución (`DEVUELTO`) si el estado actual es `ENTREGADO` |
 
 **Supuesto de diseño:** todos los identificadores propios y externos
 (`partidoId`, `equipoId`, `jugadorId`, `responsableId`, etc.) se modelan como

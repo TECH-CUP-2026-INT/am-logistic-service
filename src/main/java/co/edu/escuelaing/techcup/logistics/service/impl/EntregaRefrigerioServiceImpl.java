@@ -15,7 +15,6 @@ import co.edu.escuelaing.techcup.logistics.dto.request.RegistrarEntregaRefrigeri
 import co.edu.escuelaing.techcup.logistics.dto.response.EntregaRefrigerioResponse;
 import co.edu.escuelaing.techcup.logistics.entity.DefinicionRefrigerio;
 import co.edu.escuelaing.techcup.logistics.entity.EntregaRefrigerio;
-import co.edu.escuelaing.techcup.logistics.enums.TipoDestinatario;
 import co.edu.escuelaing.techcup.logistics.exception.DuplicateResourceException;
 import co.edu.escuelaing.techcup.logistics.exception.RecursoNoEncontradoException;
 import co.edu.escuelaing.techcup.logistics.mapper.EntregaRefrigerioMapper;
@@ -40,20 +39,19 @@ public class EntregaRefrigerioServiceImpl implements EntregaRefrigerioService {
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "La definicion de refrigerio " + request.definicionRefrigerioId() + " no existe"));
 
-        validarDestinatario(request.tipoDestinatario(), request.destinatarioId(), definicion.getEquipoId());
+        validarCapitan(request.capitanId(), definicion.getEquipoId());
 
-        if (repository.existsByPartidoIdAndTipoDestinatarioAndDestinatarioId(
-                definicion.getPartidoId(), request.tipoDestinatario(), request.destinatarioId())) {
+        if (repository.existsByPartidoIdAndCapitanId(definicion.getPartidoId(), request.capitanId())) {
             throw new DuplicateResourceException(
-                    "Ya se registro una entrega de refrigerio para el destinatario " + request.destinatarioId()
+                    "Ya se registro una entrega de refrigerio para el capitan " + request.capitanId()
                             + " en el partido " + definicion.getPartidoId());
         }
 
         EntregaRefrigerio entrega = EntregaRefrigerio.builder()
                 .definicionRefrigerioId(definicion.getId())
                 .partidoId(definicion.getPartidoId())
-                .tipoDestinatario(request.tipoDestinatario())
-                .destinatarioId(request.destinatarioId())
+                .equipoId(definicion.getEquipoId())
+                .capitanId(request.capitanId())
                 .responsableId(responsableId)
                 .fechaEntrega(Instant.now())
                 .observaciones(request.observaciones())
@@ -64,8 +62,8 @@ public class EntregaRefrigerioServiceImpl implements EntregaRefrigerioService {
         auditoriaClientPort.reportarEntrega(new RegistroAuditoriaDTO(
                 TipoEntregaAuditoria.REFRIGERIO,
                 guardada.getId(),
-                guardada.getTipoDestinatario().name(),
-                guardada.getDestinatarioId(),
+                "CAPITAN",
+                guardada.getCapitanId(),
                 guardada.getResponsableId(),
                 guardada.getFechaEntrega()
         ));
@@ -80,14 +78,11 @@ public class EntregaRefrigerioServiceImpl implements EntregaRefrigerioService {
                 .toList();
     }
 
-    private void validarDestinatario(TipoDestinatario tipo, UUID destinatarioId, UUID equipoIdDefinicion) {
-        boolean valido = switch (tipo) {
-            case EQUIPO -> destinatarioId.equals(equipoIdDefinicion) && equipoClientPort.existeEquipo(destinatarioId);
-            case JUGADOR -> equipoClientPort.existeJugadorEnEquipo(destinatarioId, equipoIdDefinicion);
-        };
-        if (!valido) {
+    private void validarCapitan(UUID capitanId, UUID equipoId) {
+        if (!equipoClientPort.esCapitanDelEquipo(capitanId, equipoId)) {
             throw new RecursoNoEncontradoException(
-                    "El destinatario " + destinatarioId + " no es valido para el equipo " + equipoIdDefinicion);
+                    "El jugador " + capitanId + " no es el capitan del equipo " + equipoId
+                            + "; el refrigerio solo puede entregarse al capitan del equipo clasificado");
         }
     }
 }

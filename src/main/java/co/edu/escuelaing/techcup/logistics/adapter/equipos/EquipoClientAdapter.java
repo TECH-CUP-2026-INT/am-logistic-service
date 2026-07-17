@@ -17,6 +17,9 @@ import lombok.extern.slf4j.Slf4j;
  *   - Ruta real para validar un equipo (se asume GET /equipos/{id}).
  *   - Ruta real para validar pertenencia de un jugador a un equipo
  *     (se asume GET /equipos/{equipoId}/jugadores/{jugadorId}).
+ *   - Ruta real para validar que un jugador es el capitan de un equipo
+ *     (se asume GET /equipos/{equipoId}/capitan/{jugadorId}).
+ *   - Ruta real para validar un arbitro (se asume GET /arbitros/{id}).
  *   - Codigo de error para "no existe" (se asume 404).
  */
 @Component
@@ -37,6 +40,16 @@ public class EquipoClientAdapter implements EquipoClientPort {
     @Override
     public boolean existeJugadorEnEquipo(UUID jugadorId, UUID equipoId) {
         return existe("/equipos/{equipoId}/jugadores/{jugadorId}", equipoId, jugadorId);
+    }
+
+    @Override
+    public boolean esCapitanDelEquipo(UUID jugadorId, UUID equipoId) {
+        return existe("/equipos/{equipoId}/capitan/{jugadorId}", equipoId, jugadorId);
+    }
+
+    @Override
+    public boolean existeArbitro(UUID arbitroId) {
+        return existe("/arbitros/{id}", arbitroId);
     }
 
     private boolean existe(String uri, Object... uriVariables) {

@@ -26,7 +26,6 @@ import co.edu.escuelaing.techcup.logistics.dto.request.RegistrarEntregaRefrigeri
 import co.edu.escuelaing.techcup.logistics.dto.response.EntregaRefrigerioResponse;
 import co.edu.escuelaing.techcup.logistics.entity.DefinicionRefrigerio;
 import co.edu.escuelaing.techcup.logistics.entity.EntregaRefrigerio;
-import co.edu.escuelaing.techcup.logistics.enums.TipoDestinatario;
 import co.edu.escuelaing.techcup.logistics.exception.DuplicateResourceException;
 import co.edu.escuelaing.techcup.logistics.exception.RecursoNoEncontradoException;
 import co.edu.escuelaing.techcup.logistics.repository.DefinicionRefrigerioRepository;
@@ -54,6 +53,7 @@ class EntregaRefrigerioServiceImplTest {
     private UUID equipoId;
     private UUID definicionId;
     private UUID responsableId;
+    private UUID capitanId;
     private DefinicionRefrigerio definicion;
 
     @BeforeEach
@@ -62,6 +62,7 @@ class EntregaRefrigerioServiceImplTest {
         equipoId = UUID.randomUUID();
         definicionId = UUID.randomUUID();
         responsableId = UUID.randomUUID();
+        capitanId = UUID.randomUUID();
 
         definicion = DefinicionRefrigerio.builder()
                 .id(definicionId)
@@ -73,14 +74,13 @@ class EntregaRefrigerioServiceImplTest {
     }
 
     @Test
-    void registrar_entregaAEquipoValido_guardaYReportaAuditoria() {
+    void registrar_capitanValido_guardaYReportaAuditoria() {
         RegistrarEntregaRefrigerioRequest request = new RegistrarEntregaRefrigerioRequest(
-                definicionId, TipoDestinatario.EQUIPO, equipoId, null);
+                definicionId, capitanId, null);
 
         when(definicionRepository.findById(definicionId)).thenReturn(Optional.of(definicion));
-        when(equipoClientPort.existeEquipo(equipoId)).thenReturn(true);
-        when(repository.existsByPartidoIdAndTipoDestinatarioAndDestinatarioId(
-                partidoId, TipoDestinatario.EQUIPO, equipoId)).thenReturn(false);
+        when(equipoClientPort.esCapitanDelEquipo(capitanId, equipoId)).thenReturn(true);
+        when(repository.existsByPartidoIdAndCapitanId(partidoId, capitanId)).thenReturn(false);
         when(repository.save(any(EntregaRefrigerio.class))).thenAnswer(inv -> {
             EntregaRefrigerio entity = inv.getArgument(0);
             entity.setId(UUID.randomUUID());
@@ -90,6 +90,8 @@ class EntregaRefrigerioServiceImplTest {
         EntregaRefrigerioResponse response = service.registrar(request, responsableId);
 
         assertThat(response.partidoId()).isEqualTo(partidoId);
+        assertThat(response.equipoId()).isEqualTo(equipoId);
+        assertThat(response.capitanId()).isEqualTo(capitanId);
         assertThat(response.responsableId()).isEqualTo(responsableId);
         verify(auditoriaClientPort, times(1)).reportarEntrega(any(RegistroAuditoriaDTO.class));
     }
@@ -97,7 +99,7 @@ class EntregaRefrigerioServiceImplTest {
     @Test
     void registrar_definicionInexistente_lanzaRecursoNoEncontrado() {
         RegistrarEntregaRefrigerioRequest request = new RegistrarEntregaRefrigerioRequest(
-                definicionId, TipoDestinatario.EQUIPO, equipoId, null);
+                definicionId, capitanId, null);
         when(definicionRepository.findById(definicionId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.registrar(request, responsableId))
@@ -107,13 +109,13 @@ class EntregaRefrigerioServiceImplTest {
     }
 
     @Test
-    void registrar_jugadorNoPerteneceAlEquipo_lanzaRecursoNoEncontrado() {
+    void registrar_jugadorNoEsCapitanDelEquipo_lanzaRecursoNoEncontrado() {
         UUID jugadorId = UUID.randomUUID();
         RegistrarEntregaRefrigerioRequest request = new RegistrarEntregaRefrigerioRequest(
-                definicionId, TipoDestinatario.JUGADOR, jugadorId, null);
+                definicionId, jugadorId, null);
 
         when(definicionRepository.findById(definicionId)).thenReturn(Optional.of(definicion));
-        when(equipoClientPort.existeJugadorEnEquipo(jugadorId, equipoId)).thenReturn(false);
+        when(equipoClientPort.esCapitanDelEquipo(jugadorId, equipoId)).thenReturn(false);
 
         assertThatThrownBy(() -> service.registrar(request, responsableId))
                 .isInstanceOf(RecursoNoEncontradoException.class);
@@ -122,14 +124,13 @@ class EntregaRefrigerioServiceImplTest {
     }
 
     @Test
-    void registrar_entregaDuplicadaParaMismoDestinatarioYPartido_lanzaDuplicateResource() {
+    void registrar_entregaDuplicadaParaMismoCapitanYPartido_lanzaDuplicateResource() {
         RegistrarEntregaRefrigerioRequest request = new RegistrarEntregaRefrigerioRequest(
-                definicionId, TipoDestinatario.EQUIPO, equipoId, null);
+                definicionId, capitanId, null);
 
         when(definicionRepository.findById(definicionId)).thenReturn(Optional.of(definicion));
-        when(equipoClientPort.existeEquipo(equipoId)).thenReturn(true);
-        when(repository.existsByPartidoIdAndTipoDestinatarioAndDestinatarioId(
-                partidoId, TipoDestinatario.EQUIPO, equipoId)).thenReturn(true);
+        when(equipoClientPort.esCapitanDelEquipo(capitanId, equipoId)).thenReturn(true);
+        when(repository.existsByPartidoIdAndCapitanId(partidoId, capitanId)).thenReturn(true);
 
         assertThatThrownBy(() -> service.registrar(request, responsableId))
                 .isInstanceOf(DuplicateResourceException.class);
@@ -139,27 +140,13 @@ class EntregaRefrigerioServiceImplTest {
     }
 
     @Test
-    void registrar_equipoDestinatarioDistintoAlDeLaDefinicion_lanzaRecursoNoEncontrado() {
-        UUID otroEquipoId = UUID.randomUUID();
-        RegistrarEntregaRefrigerioRequest request = new RegistrarEntregaRefrigerioRequest(
-                definicionId, TipoDestinatario.EQUIPO, otroEquipoId, null);
-
-        when(definicionRepository.findById(definicionId)).thenReturn(Optional.of(definicion));
-
-        assertThatThrownBy(() -> service.registrar(request, responsableId))
-                .isInstanceOf(RecursoNoEncontradoException.class);
-
-        verify(repository, never()).save(any());
-    }
-
-    @Test
     void listarPorPartido_retornaEntregasMapeadas() {
         EntregaRefrigerio entrega = EntregaRefrigerio.builder()
                 .id(UUID.randomUUID())
                 .definicionRefrigerioId(definicionId)
                 .partidoId(partidoId)
-                .tipoDestinatario(TipoDestinatario.EQUIPO)
-                .destinatarioId(equipoId)
+                .equipoId(equipoId)
+                .capitanId(capitanId)
                 .responsableId(responsableId)
                 .fechaEntrega(Instant.now())
                 .build();

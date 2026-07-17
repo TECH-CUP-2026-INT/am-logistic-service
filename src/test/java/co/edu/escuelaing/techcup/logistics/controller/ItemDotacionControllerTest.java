@@ -56,20 +56,21 @@ class ItemDotacionControllerTest {
     @Test
     void registrar_conRolOrganizador_retorna201() throws Exception {
         UUID userId = UUID.randomUUID();
-        UUID equipoId = UUID.randomUUID();
+        UUID arbitroId = UUID.randomUUID();
         RegistrarItemDotacionRequest request = new RegistrarItemDotacionRequest(
-                equipoId, TipoItemDotacion.PETO, 10, UUID.randomUUID(), null);
+                arbitroId, TipoItemDotacion.PETO, 10, UUID.randomUUID(), null);
 
-        when(service.registrar(any())).thenReturn(new ItemDotacionResponse(
-                UUID.randomUUID(), equipoId, TipoItemDotacion.PETO, 10, EstadoDotacion.PENDIENTE,
-                request.responsableAsignadoId(), null, Instant.now(), null, null, null, null));
+        when(service.registrar(any())).thenReturn(List.of(new ItemDotacionResponse(
+                UUID.randomUUID(), arbitroId, TipoItemDotacion.PETO, EstadoDotacion.PENDIENTE,
+                request.responsableAsignadoId(), null, Instant.now(), null, null, null, null)));
 
         mockMvc.perform(post("/api/dotacion")
                         .header("Authorization", JwtTestSupport.bearer(userId, "ORGANIZADOR"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.estado").value("PENDIENTE"));
+                .andExpect(jsonPath("$[0].estado").value("PENDIENTE"))
+                .andExpect(jsonPath("$[0].arbitroId").value(arbitroId.toString()));
     }
 
     @Test
@@ -103,7 +104,7 @@ class ItemDotacionControllerTest {
         MarcarDotacionEntregadaRequest request = new MarcarDotacionEntregadaRequest("Entregado");
 
         when(service.marcarEntregado(any(), any(), any())).thenReturn(new ItemDotacionResponse(
-                itemId, UUID.randomUUID(), TipoItemDotacion.KIT, 1, EstadoDotacion.ENTREGADO,
+                itemId, UUID.randomUUID(), TipoItemDotacion.KIT, EstadoDotacion.ENTREGADO,
                 UUID.randomUUID(), userId, Instant.now(), Instant.now(), null, null, "Entregado"));
 
         mockMvc.perform(patch("/api/dotacion/{itemId}/entrega", itemId)
@@ -120,7 +121,7 @@ class ItemDotacionControllerTest {
         UUID itemId = UUID.randomUUID();
 
         when(service.marcarEntregado(any(), any(), any())).thenReturn(new ItemDotacionResponse(
-                itemId, UUID.randomUUID(), TipoItemDotacion.KIT, 1, EstadoDotacion.ENTREGADO,
+                itemId, UUID.randomUUID(), TipoItemDotacion.KIT, EstadoDotacion.ENTREGADO,
                 UUID.randomUUID(), userId, Instant.now(), Instant.now(), null, null, null));
 
         mockMvc.perform(patch("/api/dotacion/{itemId}/entrega", itemId)
@@ -145,7 +146,7 @@ class ItemDotacionControllerTest {
         RegistrarDevolucionDotacionRequest request = new RegistrarDevolucionDotacionRequest("Devuelto en buen estado");
 
         when(service.registrarDevolucion(any(), any(), any())).thenReturn(new ItemDotacionResponse(
-                itemId, UUID.randomUUID(), TipoItemDotacion.KIT, 1, EstadoDotacion.DEVUELTO,
+                itemId, UUID.randomUUID(), TipoItemDotacion.KIT, EstadoDotacion.DEVUELTO,
                 UUID.randomUUID(), UUID.randomUUID(), Instant.now(), Instant.now(), userId, Instant.now(),
                 "Devuelto en buen estado"));
 
@@ -163,7 +164,7 @@ class ItemDotacionControllerTest {
         UUID itemId = UUID.randomUUID();
 
         when(service.registrarDevolucion(any(), any(), any())).thenReturn(new ItemDotacionResponse(
-                itemId, UUID.randomUUID(), TipoItemDotacion.KIT, 1, EstadoDotacion.DEVUELTO,
+                itemId, UUID.randomUUID(), TipoItemDotacion.KIT, EstadoDotacion.DEVUELTO,
                 UUID.randomUUID(), UUID.randomUUID(), Instant.now(), Instant.now(), userId, Instant.now(), null));
 
         mockMvc.perform(patch("/api/dotacion/{itemId}/devolucion", itemId)
@@ -182,27 +183,38 @@ class ItemDotacionControllerTest {
     }
 
     @Test
-    void listarPorEquipo_autenticadoSinRolOrganizador_retorna200() throws Exception {
+    void listarPorArbitro_conRolOrganizador_retorna200() throws Exception {
         UUID userId = UUID.randomUUID();
-        UUID equipoId = UUID.randomUUID();
-        when(service.listarPorEquipo(equipoId, null)).thenReturn(List.of());
+        UUID arbitroId = UUID.randomUUID();
+        when(service.listarPorArbitro(arbitroId, null)).thenReturn(List.of());
 
         mockMvc.perform(get("/api/dotacion")
-                        .header("Authorization", JwtTestSupport.bearer(userId, "JUGADOR"))
-                        .param("equipoId", equipoId.toString()))
+                        .header("Authorization", JwtTestSupport.bearer(userId, "ORGANIZADOR"))
+                        .param("arbitroId", arbitroId.toString()))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void listarPorEquipo_conFiltroDeEstado_retorna200() throws Exception {
+    void listarPorArbitro_conFiltroDeEstado_retorna200() throws Exception {
         UUID userId = UUID.randomUUID();
-        UUID equipoId = UUID.randomUUID();
-        when(service.listarPorEquipo(equipoId, EstadoDotacion.PENDIENTE)).thenReturn(List.of());
+        UUID arbitroId = UUID.randomUUID();
+        when(service.listarPorArbitro(arbitroId, EstadoDotacion.PENDIENTE)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/dotacion")
+                        .header("Authorization", JwtTestSupport.bearer(userId, "ORGANIZADOR"))
+                        .param("arbitroId", arbitroId.toString())
+                        .param("estado", "PENDIENTE"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void listarPorArbitro_sinRolAutorizado_retorna403() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID arbitroId = UUID.randomUUID();
 
         mockMvc.perform(get("/api/dotacion")
                         .header("Authorization", JwtTestSupport.bearer(userId, "JUGADOR"))
-                        .param("equipoId", equipoId.toString())
-                        .param("estado", "PENDIENTE"))
-                .andExpect(status().isOk());
+                        .param("arbitroId", arbitroId.toString()))
+                .andExpect(status().isForbidden());
     }
 }

@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,7 +23,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Requerimiento 2: registro de entrega real de refrigerios por equipo o jugador.
+ * Requerimiento 2: registro de entrega real de refrigerios al Capitan del
+ * equipo clasificado.
  */
 @RestController
 @RequestMapping("/api/refrigerios/entregas")
@@ -35,10 +37,12 @@ public class EntregaRefrigerioController {
     @PostMapping
     @RequireOrganizador
     @Operation(
-            summary = "Registra la entrega real de un refrigerio a un equipo o jugador",
-            description = "Requiere rol organizador. La identidad y el rol se extraen del JWT "
-                    + "(header Authorization: Bearer) ya validado por el API Gateway; el "
-                    + "interceptor de seguridad rechaza la solicitud si el rol no es organizador."
+            summary = "Registra la entrega real de un refrigerio al Capitan del equipo clasificado",
+            description = "Requiere rol organizador. El destinatario (capitanId) se valida contra el "
+                    + "Servicio de Equipos: la entrega se rechaza si el jugador indicado no es el "
+                    + "capitan del equipo de la definicion referenciada. La identidad y el rol se "
+                    + "extraen del JWT (header Authorization: Bearer) ya validado por el API Gateway; "
+                    + "el interceptor de seguridad rechaza la solicitud si el rol no es organizador."
     )
     public ResponseEntity<EntregaRefrigerioResponse> registrar(
             @Valid @RequestBody RegistrarEntregaRefrigerioRequest request) {
@@ -48,6 +52,8 @@ public class EntregaRefrigerioController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','ORGANIZADOR')")
+    @Operation(summary = "Lista las entregas de refrigerio de un partido", description = "Requiere rol ADMIN u ORGANIZADOR.")
     public ResponseEntity<List<EntregaRefrigerioResponse>> listarPorPartido(
             @RequestParam UUID partidoId) {
         return ResponseEntity.ok(service.listarPorPartido(partidoId));

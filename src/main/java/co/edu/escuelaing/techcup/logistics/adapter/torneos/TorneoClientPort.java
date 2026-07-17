@@ -14,4 +14,11 @@ public interface TorneoClientPort {
     boolean existePartido(UUID partidoId);
 
     Optional<PartidoDTO> obtenerPartido(UUID partidoId);
+
+    /**
+     * Indica si el equipo ya clasifico a segunda fase segun los resultados
+     * registrados en el Servicio de Torneos. Los refrigerios solo pueden
+     * definirse para equipos que cumplan esta condicion.
+     */
+    boolean equipoClasificadoSegundaFase(UUID equipoId);
 }

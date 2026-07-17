@@ -7,10 +7,17 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+/**
+ * La dotacion (peto, balon o kit) solo puede entregarse a un arbitro:
+ * arbitroId se valida contra el Servicio de Equipos. cantidad indica cuantas
+ * unidades fisicas registrar de una sola vez; cada una se guarda como un
+ * item independiente (un documento por unidad), para poder rastrearla
+ * individualmente en las etapas de entrega y devolucion.
+ */
 public record RegistrarItemDotacionRequest(
 
-        @NotNull(message = "El equipo destinatario es obligatorio")
-        UUID equipoId,
+        @NotNull(message = "El arbitro destinatario es obligatorio")
+        UUID arbitroId,
 
         @NotNull(message = "El tipo de item es obligatorio")
         TipoItemDotacion tipoItem,

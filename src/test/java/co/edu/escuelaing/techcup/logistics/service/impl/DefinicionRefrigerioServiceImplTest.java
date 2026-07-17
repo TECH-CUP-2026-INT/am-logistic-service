@@ -24,6 +24,7 @@ import co.edu.escuelaing.techcup.logistics.dto.request.ItemRefrigerioRequest;
 import co.edu.escuelaing.techcup.logistics.dto.response.DefinicionRefrigerioResponse;
 import co.edu.escuelaing.techcup.logistics.entity.DefinicionRefrigerio;
 import co.edu.escuelaing.techcup.logistics.exception.DuplicateResourceException;
+import co.edu.escuelaing.techcup.logistics.exception.EquipoNoClasificadoException;
 import co.edu.escuelaing.techcup.logistics.exception.RecursoNoEncontradoException;
 import co.edu.escuelaing.techcup.logistics.repository.DefinicionRefrigerioRepository;
 
@@ -63,6 +64,7 @@ class DefinicionRefrigerioServiceImplTest {
     void crear_conDatosValidos_guardaYRetornaDefinicion() {
         when(torneoClientPort.existePartido(partidoId)).thenReturn(true);
         when(equipoClientPort.existeEquipo(equipoId)).thenReturn(true);
+        when(torneoClientPort.equipoClasificadoSegundaFase(equipoId)).thenReturn(true);
         when(repository.existsByPartidoIdAndEquipoId(partidoId, equipoId)).thenReturn(false);
         when(repository.save(any(DefinicionRefrigerio.class))).thenAnswer(inv -> {
             DefinicionRefrigerio entity = inv.getArgument(0);
@@ -104,10 +106,23 @@ class DefinicionRefrigerioServiceImplTest {
     void crear_definicionYaExistenteParaPartidoYEquipo_lanzaDuplicateResource() {
         when(torneoClientPort.existePartido(partidoId)).thenReturn(true);
         when(equipoClientPort.existeEquipo(equipoId)).thenReturn(true);
+        when(torneoClientPort.equipoClasificadoSegundaFase(equipoId)).thenReturn(true);
         when(repository.existsByPartidoIdAndEquipoId(partidoId, equipoId)).thenReturn(true);
 
         assertThatThrownBy(() -> service.crear(request, creadoPorId))
                 .isInstanceOf(DuplicateResourceException.class);
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void crear_equipoNoClasificadoASegundaFase_lanzaEquipoNoClasificado() {
+        when(torneoClientPort.existePartido(partidoId)).thenReturn(true);
+        when(equipoClientPort.existeEquipo(equipoId)).thenReturn(true);
+        when(torneoClientPort.equipoClasificadoSegundaFase(equipoId)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.crear(request, creadoPorId))
+                .isInstanceOf(EquipoNoClasificadoException.class);
 
         verify(repository, never()).save(any());
     }

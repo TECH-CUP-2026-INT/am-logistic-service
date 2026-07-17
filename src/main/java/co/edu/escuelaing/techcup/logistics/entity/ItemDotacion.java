@@ -17,8 +17,10 @@ import lombok.Setter;
 import lombok.ToString;
 
 /**
- * Item de dotacion (peto, balon o kit) asignado a un equipo, con su estado de
- * entrega y el responsable asociado en cada etapa.
+ * Item individual de dotacion (un peto, un balon o un kit) asignado a un
+ * arbitro, con su estado de entrega y el responsable asociado en cada etapa.
+ * Cada unidad fisica es un documento propio: no se agregan varias unidades en
+ * un mismo registro, para poder rastrear cada item individualmente.
  */
 @Document(collection = "item_dotacion")
 @Getter
@@ -35,11 +37,9 @@ public class ItemDotacion {
     @EqualsAndHashCode.Include
     private UUID id = UUID.randomUUID();
 
-    private UUID equipoId;
+    private UUID arbitroId;
 
     private TipoItemDotacion tipoItem;
-
-    private Integer cantidad;
 
     private EstadoDotacion estado;
 

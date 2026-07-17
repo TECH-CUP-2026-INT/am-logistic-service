@@ -93,14 +93,25 @@ class DefinicionRefrigerioControllerTest {
     }
 
     @Test
-    void listarPorPartido_autenticadoSinRolOrganizador_retorna200() throws Exception {
+    void listarPorPartido_conRolOrganizador_retorna200() throws Exception {
         UUID userId = UUID.randomUUID();
         UUID partidoId = UUID.randomUUID();
         when(service.listarPorPartido(partidoId)).thenReturn(List.of());
 
         mockMvc.perform(get("/api/refrigerios/definiciones")
-                        .header("Authorization", JwtTestSupport.bearer(userId, "JUGADOR"))
+                        .header("Authorization", JwtTestSupport.bearer(userId, "ORGANIZADOR"))
                         .param("partidoId", partidoId.toString()))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void listarPorPartido_sinRolAutorizado_retorna403() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID partidoId = UUID.randomUUID();
+
+        mockMvc.perform(get("/api/refrigerios/definiciones")
+                        .header("Authorization", JwtTestSupport.bearer(userId, "JUGADOR"))
+                        .param("partidoId", partidoId.toString()))
+                .andExpect(status().isForbidden());
     }
 }
